@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Collarix",
+  "name": "Collarix – Smart Pet Care",
+  "description": "Smart pet care app by Saloni Agarwal. Track feeding, health, reminders & more.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,18 +9,32 @@
       "type": "image/x-icon"
     },
     {
+      "src": "collarix-logo.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#4A6741",
+  "background_color": "#F7F5F0",
+  "categories": ["lifestyle", "health", "utilities"],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

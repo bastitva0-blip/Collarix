@@ -13,6 +13,119 @@ import {
 import { supabase } from "./supabaseClient";
 import collarixLogo from "./collarix-logo.svg";
 
+// ── PWA INSTALL BANNER ────────────────────────────────────────────────────────
+function useInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [canInstall, setCanInstall] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Already installed as PWA?
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
+      setIsInstalled(true);
+      return;
+    }
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => { setIsInstalled(true); setCanInstall(false); });
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  async function promptInstall() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") setIsInstalled(true);
+    setDeferredPrompt(null);
+    setCanInstall(false);
+  }
+
+  return { canInstall, isInstalled, promptInstall };
+}
+
+function InstallBanner({ onInstall, onDismiss }) {
+  return (
+    <div style={{
+      position: "fixed", bottom: 88, left: "50%", transform: "translateX(-50%)",
+      width: "calc(100% - 32px)", maxWidth: 398,
+      background: "linear-gradient(135deg, #2C3520 0%, #4A6741 100%)",
+      borderRadius: 18, padding: "14px 16px",
+      display: "flex", alignItems: "center", gap: 12,
+      boxShadow: "0 8px 32px rgba(44,53,32,0.35)",
+      zIndex: 99998, animation: "slideUp 0.35s cubic-bezier(.22,.68,0,1.2)"
+    }}>
+      <img src={collarixLogo} alt="" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: "#F7F5F0", padding: 4 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: "white", fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>Install Collarix</div>
+        <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, marginTop: 2 }}>Add to home screen for quick access</div>
+      </div>
+      <button onClick={onInstall} style={{
+        background: "#F7F5F0", color: "#2C3520", border: "none",
+        borderRadius: 10, padding: "8px 14px", fontWeight: 800,
+        fontSize: 12, cursor: "pointer", flexShrink: 0, letterSpacing: "0.3px"
+      }}>
+        Install
+      </button>
+      <button onClick={onDismiss} style={{
+        background: "none", border: "none", color: "rgba(255,255,255,0.5)",
+        cursor: "pointer", padding: 4, flexShrink: 0, lineHeight: 1
+      }}>
+        <X size={16} />
+      </button>
+    </div>
+  );
+}
+
+// ── iOS INSTALL INSTRUCTIONS MODAL ───────────────────────────────────────────
+function IOSInstallModal({ onClose }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+      zIndex: 999999, display: "flex", alignItems: "flex-end", justifyContent: "center"
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "white", borderRadius: "24px 24px 0 0",
+        padding: "24px 24px 40px", width: "100%", maxWidth: 430,
+        boxShadow: "0 -8px 40px rgba(0,0,0,0.15)"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src={collarixLogo} alt="" style={{ width: 36, height: 36, borderRadius: 8, background: "#F7F5F0", padding: 3 }} />
+            <div style={{ fontWeight: 800, fontSize: 16, color: "#2C3520" }}>Install Collarix</div>
+          </div>
+          <button onClick={onClose} style={{ background: "#F0F4EC", border: "none", borderRadius: 20, padding: "6px 10px", cursor: "pointer" }}>
+            <X size={16} color="#7A8B6A" />
+          </button>
+        </div>
+        <p style={{ color: "#7A8B6A", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
+          Add Collarix to your home screen for a full app experience — works offline too!
+        </p>
+        {[
+          { num: 1, icon: "⬆️", text: <>Tap the <strong>Share</strong> button at the bottom of Safari</> },
+          { num: 2, icon: "➕", text: <>Scroll down and tap <strong>"Add to Home Screen"</strong></> },
+          { num: 3, icon: "🐾", text: <>Tap <strong>"Add"</strong> — Collarix will appear on your home screen!</> },
+        ].map(({ num, icon, text }) => (
+          <div key={num} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 16 }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F0F5EE", border: "1.5px solid #D0DEC8", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, color: "#4A6741", flexShrink: 0 }}>{num}</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", paddingTop: 6 }}>
+              <span style={{ fontSize: 18 }}>{icon}</span>
+              <span style={{ color: "#2C3520", fontSize: 14, lineHeight: 1.4 }}>{text}</span>
+            </div>
+          </div>
+        ))}
+        <button onClick={onClose} style={{
+          width: "100%", background: "#4A6741", color: "white", border: "none",
+          borderRadius: 14, padding: "14px", fontWeight: 800, fontSize: 15, cursor: "pointer", marginTop: 4
+        }}>Got it!</button>
+      </div>
+    </div>
+  );
+}
+
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const REMINDER_ICONS = {
   feeding: Utensils, water: Droplets, litter: Trash2,
@@ -1338,7 +1451,7 @@ function QRGeneratorScreen({ pets }) {
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
-function SettingsScreen({ user, onLogout }) {
+function SettingsScreen({ user, onLogout, onInstall, canInstall, isInstalled, isIOS }) {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
@@ -1407,6 +1520,16 @@ function SettingsScreen({ user, onLogout }) {
           </a>
         </div>
       </SectionCard>
+      {!isInstalled && (canInstall || isIOS) && (
+        <button onClick={onInstall} style={{ width: "100%", background: "linear-gradient(135deg, #2C3520 0%, #4A6741 100%)", color: "white", border: "none", borderRadius: 14, padding: "14px", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+          📲 Install Collarix App
+        </button>
+      )}
+      {isInstalled && (
+        <div style={{ width: "100%", background: "#E8F4E8", color: "#2E7D32", border: "1.5px solid #C8E6C9", borderRadius: 14, padding: "14px", fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
+          ✅ Collarix is installed!
+        </div>
+      )}
       <button onClick={handleLogout} style={{ width: "100%", background: "#FFEBEE", color: "#C62828", border: "1.5px solid #FFCDD2", borderRadius: 14, padding: "14px", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
         <LogOut size={18} /> Sign Out
       </button>
@@ -1488,6 +1611,29 @@ export default function App() {
   const [screen, setScreen] = useState("dashboard");
   const [activePet, setActivePet] = useState(null);
   const [navTab, setNavTab] = useState("dashboard");
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
+
+  useEffect(() => {
+    if (isInstalled) { setShowInstallBanner(false); return; }
+    const dismissed = sessionStorage.getItem("collarix-install-dismissed");
+    if (dismissed) return;
+    const t = setTimeout(() => {
+      if (canInstall || isIOS) setShowInstallBanner(true);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [canInstall, isInstalled, isIOS]);
+
+  function handleInstallClick() {
+    if (isIOS) { setShowInstallBanner(false); setShowIOSModal(true); }
+    else { promptInstall(); setShowInstallBanner(false); }
+  }
+  function handleDismissBanner() {
+    setShowInstallBanner(false);
+    sessionStorage.setItem("collarix-install-dismissed", "1");
+  }
 
   // Auth listener
   useEffect(() => {
@@ -1572,7 +1718,7 @@ export default function App() {
       case "reminders": return activePet ? <RemindersScreen pet={activePet} user={user} /> : null;
       case "blog": return <BlogScreen user={user} />;
       case "qrgenerator": return <QRGeneratorScreen pets={pets} />;
-      case "settings": return <SettingsScreen user={user} onLogout={() => setSession(null)} />;
+      case "settings": return <SettingsScreen user={user} onLogout={() => setSession(null)} onInstall={handleInstallClick} canInstall={canInstall} isInstalled={isInstalled} isIOS={isIOS} />;
       default: return null;
     }
   }
@@ -1581,11 +1727,16 @@ export default function App() {
     <div style={{ maxWidth: 430, margin: "0 auto", background: "#F7F5F0", minHeight: "100vh", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 0; }
         input, select, textarea { -webkit-appearance: none; }
         @keyframes novatech-pulse { 0%,100%{opacity:0.055} 50%{opacity:0.09} }
       `}</style>
+      {showInstallBanner && !isInstalled && (
+        <InstallBanner onInstall={handleInstallClick} onDismiss={handleDismissBanner} />
+      )}
+      {showIOSModal && <IOSInstallModal onClose={() => setShowIOSModal(false)} />}
       {/* Collarix watermark */}
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, height: "100vh", pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}>
         {Array.from({ length: 16 }).map((_, i) => {
