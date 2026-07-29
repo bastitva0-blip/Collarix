@@ -242,7 +242,7 @@ function LoginScreen() {
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #F7F5F0 0%, #EBF0E8 50%, #F0EDE8 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px", position: "relative", overflow: "hidden" }}>
       {Array.from({ length: 16 }).map((_, i) => {
         const row = Math.floor(i / 4); const col = i % 4;
-        return <div key={i} style={{ position: "absolute", left: `${col * 30 - 5 + (row % 2) * 15}%`, top: `${row * 14 - 3}%`, transform: "rotate(-35deg)", fontFamily: "'Georgia', serif", fontSize: 13, fontWeight: 700, color: "#3A5A30", opacity: 0.07, letterSpacing: "3px", textTransform: "uppercase", whiteSpace: "nowrap", userSelect: "none" }}>NovaTech</div>;
+        return <div key={i} style={{ position: "absolute", left: `${col * 30 - 5 + (row % 2) * 15}%`, top: `${row * 14 - 3}%`, transform: "rotate(-35deg)", fontFamily: "'Georgia', serif", fontSize: 13, fontWeight: 700, color: "#3A5A30", opacity: 0.07, letterSpacing: "3px", textTransform: "uppercase", whiteSpace: "nowrap", userSelect: "none" }}>collarix</div>;
       })}
       <div style={{ textAlign: "center", marginBottom: 32, position: "relative", zIndex: 1 }}>
         <img src={collarixLogo} alt="Collarix" style={{ width: 160, height: 160, objectFit: "contain", display: "block", margin: "0 auto 8px", filter: "drop-shadow(0 4px 16px rgba(74,103,65,0.18))" }} />
@@ -1356,8 +1356,11 @@ function QRGeneratorScreen({ pets }) {
               <div style={{ fontFamily: "'Georgia', serif", fontSize: 22, fontWeight: 700, color: "#2C3520" }}>
                 {selected.photo} {selected.name}
               </div>
-              <div style={{ color: "#9AA88A", fontSize: 13, marginTop: 3, marginBottom: 20 }}>
+              <div style={{ color: "#9AA88A", fontSize: 13, marginTop: 3, marginBottom: 6 }}>
                 {selected.breed || (selected.species === "cat" ? "Cat" : "Dog")} · {selected.species}
+              </div>
+              <div style={{ fontSize: 11, color: "#B0BDA8", marginBottom: 18, letterSpacing: "1px" }}>
+                pet-{selected.id?.slice(0,3).toUpperCase() || "000"}
               </div>
 
               {/* QR Code with paw-print frame */}
@@ -1451,7 +1454,7 @@ function QRGeneratorScreen({ pets }) {
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
-function SettingsScreen({ user, onLogout, onInstall, canInstall, isInstalled, isIOS }) {
+function SettingsScreen({ user, onLogout, onInstall, canInstall, isInstalled, isIOS, darkMode, onToggleDark }) {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
@@ -1464,62 +1467,110 @@ function SettingsScreen({ user, onLogout, onInstall, canInstall, isInstalled, is
     onLogout();
   }
 
+  const dm = darkMode;
+  const card = dm ? "#1E241A" : "white";
+  const cardText = dm ? "#E8EDE4" : "#2C3520";
+  const cardSub = dm ? "#8BA882" : "#7A8B6A";
+  const cardBorder = dm ? "#2C3A28" : "#F0F4EC";
+  const sectionBg = dm ? "#161B13" : "#F7F5F0";
+
+  function SettingRow({ icon, label, sublabel, right, onClick, danger }) {
+    return (
+      <button onClick={onClick} style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 14,
+        padding: "13px 0", background: "none", border: "none", cursor: onClick ? "pointer" : "default",
+        borderBottom: `1px solid ${cardBorder}`, textAlign: "left"
+      }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: danger ? "#FFEBEE" : (dm ? "#2C3A28" : "#F0F4EC"), display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 17 }}>
+          {icon}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: danger ? "#C62828" : cardText }}>{label}</div>
+          {sublabel && <div style={{ fontSize: 11, color: cardSub, marginTop: 1 }}>{sublabel}</div>}
+        </div>
+        {right || (onClick && <ChevronRight size={15} color={cardSub} />)}
+      </button>
+    );
+  }
+
   return (
-    <div style={{ padding: "0 16px 16px" }}>
+    <div style={{ padding: "0 16px 32px", background: sectionBg, minHeight: "100vh" }}>
       <div style={{ padding: "20px 0 16px" }}>
-        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>⚙️ Settings</h2>
+        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: cardText, margin: 0 }}>⚙️ Settings</h2>
       </div>
-      <div style={{ background: "white", borderRadius: 16, padding: 20, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+
+      {/* Profile card */}
+      <div style={{ background: card, borderRadius: 20, padding: 20, marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#4A674130", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <User size={24} color="#4A6741" />
+          <div style={{ width: 58, height: 58, borderRadius: "50%", background: "#4A674130", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <User size={26} color="#4A6741" />
           </div>
-          <div>
-            <div style={{ fontWeight: 700, color: "#2C3520", fontSize: 16 }}>{profile?.full_name || "Pet Owner"}</div>
-            <div style={{ color: "#7A8B6A", fontSize: 13 }}>{user.email}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, color: cardText, fontSize: 16 }}>{profile?.full_name || "Pet Owner"}</div>
+            <div style={{ color: cardSub, fontSize: 13 }}>{user.email}</div>
+          </div>
+          <div style={{ background: "#4A674115", borderRadius: 20, padding: "4px 10px" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#4A6741" }}>Member</span>
           </div>
         </div>
       </div>
-      <SectionCard title="Account">
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {[["Email", user.email],["Member since", new Date(user.created_at).toLocaleDateString("en-IN", { month: "long", year: "numeric" })]].map(([label, val]) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #F0F4EC" }}>
-              <span style={{ color: "#7A8B6A", fontSize: 13 }}>{label}</span>
-              <span style={{ color: "#2C3520", fontSize: 13, fontWeight: 600 }}>{val}</span>
+
+      {/* Account section */}
+      <div style={{ background: card, borderRadius: 16, padding: "4px 16px", marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: cardSub, textTransform: "uppercase", letterSpacing: "0.8px", paddingTop: 14, paddingBottom: 4 }}>Account</div>
+        <SettingRow icon="📧" label="Email" sublabel={user.email} />
+        <SettingRow icon="📅" label="Member since" sublabel={new Date(user.created_at).toLocaleDateString("en-IN", { month: "long", year: "numeric" })} />
+        <SettingRow icon={dm ? "☀️" : "🌙"} label={dm ? "Light Mode" : "Dark Mode"} sublabel="Toggle app appearance" onClick={onToggleDark}
+          right={
+            <div style={{ width: 44, height: 24, borderRadius: 12, background: dm ? "#4A6741" : "#DDE5D8", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "white", position: "absolute", top: 3, left: dm ? 23 : 3, transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
             </div>
-          ))}
+          }
+        />
+        <div style={{ paddingBottom: 4 }}>
+          <SettingRow icon="🔔" label="Notifications" sublabel="Reminders & health alerts" onClick={() => toast("Notification settings coming soon!")} />
         </div>
-      </SectionCard>
-      <SectionCard title="About Collarix">
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <img src={collarixLogo} alt="Collarix logo" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 14, flexShrink: 0 }} />
-            <div>
-              <div style={{ fontWeight: 700, color: "#2C3520", fontSize: 16, fontFamily: "'Georgia', serif" }}>Collarix</div>
-              <div style={{ color: "#7A8B6A", fontSize: 12, marginTop: 2 }}>Smart Pet Care · v2.0.0</div>
-              <div style={{ color: "#9AA88A", fontSize: 11, marginTop: 4 }}>Backed by Supabase</div>
-            </div>
-          </div>
-          <div style={{ borderTop: "1px solid #F0F4EC", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            {[
-              ["👩‍💻 Made by", "Saloni Agarwal"],
-              ["📧 Email", "collarix.in@gmail.com"],
-              ["📸 Instagram", "@collarix.in"],
-            ].map(([label, val]) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#9AA88A", fontSize: 12 }}>{label}</span>
-                <span style={{ color: "#4A6741", fontSize: 12, fontWeight: 600 }}>{val}</span>
-              </div>
-            ))}
-          </div>
-          <a href="https://instagram.com/collarix.in" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)", color: "white", borderRadius: 12, padding: "10px", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
-            📸 Follow @collarix.in on Instagram
-          </a>
-          <a href="mailto:collarix.in@gmail.com" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#F0F4EC", color: "#4A6741", borderRadius: 12, padding: "10px", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>
-            ✉️ collarix.in@gmail.com
-          </a>
+      </div>
+
+      {/* Legal section */}
+      <div style={{ background: card, borderRadius: 16, padding: "4px 16px", marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: cardSub, textTransform: "uppercase", letterSpacing: "0.8px", paddingTop: 14, paddingBottom: 4 }}>Legal</div>
+        <SettingRow icon="🔒" label="Privacy Policy" sublabel="How we handle your data" onClick={() => toast("Privacy policy opens in browser")} />
+        <SettingRow icon="📋" label="Terms of Service" sublabel="Rules & conditions of use" onClick={() => toast("Terms of service opens in browser")} />
+        <div style={{ paddingBottom: 4 }}>
+          <SettingRow icon="🍪" label="Cookie Preferences" sublabel="Manage data & analytics" onClick={() => toast("Cookie settings coming soon!")} />
         </div>
-      </SectionCard>
+      </div>
+
+      {/* Support section */}
+      <div style={{ background: card, borderRadius: 16, padding: "4px 16px", marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: cardSub, textTransform: "uppercase", letterSpacing: "0.8px", paddingTop: 14, paddingBottom: 4 }}>Support</div>
+        <SettingRow icon="💬" label="Help & Support" sublabel="FAQs, contact us" onClick={() => window.open("mailto:collarix.in@gmail.com?subject=Collarix Support", "_blank")} />
+        <SettingRow icon="⭐" label="Rate Collarix" sublabel="Love the app? Leave a review" onClick={() => toast("Thank you! Rating coming soon.")} />
+        <div style={{ paddingBottom: 4 }}>
+          <SettingRow icon="🐛" label="Report a Bug" sublabel="Help us improve" onClick={() => window.open("mailto:collarix.in@gmail.com?subject=Bug Report", "_blank")} />
+        </div>
+      </div>
+
+      {/* About section */}
+      <div style={{ background: card, borderRadius: 16, padding: "4px 16px", marginBottom: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: cardSub, textTransform: "uppercase", letterSpacing: "0.8px", paddingTop: 14, paddingBottom: 4 }}>About Collarix</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: `1px solid ${cardBorder}` }}>
+          <img src={collarixLogo} alt="Collarix logo" style={{ width: 56, height: 56, objectFit: "contain", borderRadius: 14, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 700, color: cardText, fontSize: 15, fontFamily: "'Georgia', serif" }}>Collarix</div>
+            <div style={{ color: cardSub, fontSize: 12, marginTop: 2 }}>Smart Pet Care · v2.0.0</div>
+            <div style={{ color: dm ? "#5A7050" : "#9AA88A", fontSize: 11, marginTop: 3 }}>🐾 Backed by Supabase</div>
+          </div>
+        </div>
+        <SettingRow icon="👩‍💻" label="Made by Saloni Agarwal" sublabel="Designer & Developer" onClick={() => window.open("https://instagram.com/collarix.in", "_blank")} />
+        <SettingRow icon="📸" label="Instagram" sublabel="@collarix.in" onClick={() => window.open("https://instagram.com/collarix.in", "_blank")} />
+        <div style={{ paddingBottom: 4 }}>
+          <SettingRow icon="📧" label="Email Us" sublabel="collarix.in@gmail.com" onClick={() => window.open("mailto:collarix.in@gmail.com", "_blank")} />
+        </div>
+      </div>
+
+      {/* Install banner */}
       {!isInstalled && (canInstall || isIOS) && (
         <button onClick={onInstall} style={{ width: "100%", background: "linear-gradient(135deg, #2C3520 0%, #4A6741 100%)", color: "white", border: "none", borderRadius: 14, padding: "14px", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
           📲 Install Collarix App
@@ -1530,19 +1581,28 @@ function SettingsScreen({ user, onLogout, onInstall, canInstall, isInstalled, is
           ✅ Collarix is installed!
         </div>
       )}
+
       <button onClick={handleLogout} style={{ width: "100%", background: "#FFEBEE", color: "#C62828", border: "1.5px solid #FFCDD2", borderRadius: 14, padding: "14px", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
         <LogOut size={18} /> Sign Out
       </button>
+
+      <div style={{ textAlign: "center", marginTop: 20, color: dm ? "#3A4A35" : "#C5D0BE", fontSize: 11 }}>
+        Collarix v2.0.0 · Made with 🐾 by Saloni Agarwal
+      </div>
     </div>
   );
 }
 
 // ── APP HEADER ────────────────────────────────────────────────────────────────
-function AppHeader({ screen, pet, onBack, onQR }) {
+function AppHeader({ screen, pet, onBack, onQR, darkMode, onToggleDark }) {
   const showBack = ["profile","food","water","litter","vet","reminders"].includes(screen);
   const title = { dashboard: "Collarix", pets: "My Pets", scan: "QR Scanner", blog: "Blog", qrgenerator: "QR Profiles", settings: "Settings" }[screen] || pet?.name || "Collarix";
+  const bg = darkMode ? "#1E241A" : "white";
+  const border = darkMode ? "#2C3520" : "#F0F4EC";
+  const textColor = darkMode ? "#E8EDE4" : "#2C3520";
+  const iconColor = darkMode ? "#8BA882" : "#7A8B6A";
   return (
-    <div style={{ background: "white", padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F0F4EC", position: "sticky", top: 0, zIndex: 100 }}>
+    <div style={{ background: bg, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${border}`, position: "sticky", top: 0, zIndex: 100 }}>
       {showBack ? (
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 8px 4px 0", display: "flex", alignItems: "center", gap: 6, color: "#4A6741", fontWeight: 600, fontSize: 14 }}>
           <ChevronLeft size={18} /> Back
@@ -1550,12 +1610,28 @@ function AppHeader({ screen, pet, onBack, onQR }) {
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <img src={collarixLogo} alt="Collarix" style={{ width: 32, height: 32, objectFit: "contain" }} />
-          <span style={{ fontFamily: "'Georgia', serif", fontWeight: 700, color: "#2C3520", fontSize: 17 }}>{title}</span>
+          <span style={{ fontFamily: "'Georgia', serif", fontWeight: 700, color: textColor, fontSize: 17 }}>{title}</span>
         </div>
       )}
-      <button onClick={onQR} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-        <QrCode size={20} color="#7A8B6A" />
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {/* Dark mode toggle */}
+        <button onClick={onToggleDark} title={darkMode ? "Switch to light mode" : "Switch to dark mode"} style={{
+          background: darkMode ? "#2C3520" : "#F0F4EC",
+          border: "none", borderRadius: 20, padding: "6px 10px",
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+          transition: "background 0.2s"
+        }}>
+          {darkMode
+            ? <Sun size={15} color="#D4A853" />
+            : <Moon size={15} color="#7A8B6A" />}
+          <span style={{ fontSize: 11, fontWeight: 700, color: darkMode ? "#D4A853" : "#7A8B6A" }}>
+            {darkMode ? "Light" : "Dark"}
+          </span>
+        </button>
+        <button onClick={onQR} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+          <QrCode size={20} color={iconColor} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1613,6 +1689,7 @@ export default function App() {
   const [navTab, setNavTab] = useState("dashboard");
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("collarix-dark") === "1");
   const { canInstall, isInstalled, promptInstall } = useInstallPrompt();
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
 
@@ -1693,7 +1770,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(160deg, #F7F5F0 0%, #EBF0E8 50%, #F0EDE8 100%)" }}>
         <div style={{ textAlign: "center" }}>
-          <img src={collarixLogo} alt="Collarix" style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 16, animation: "novatech-pulse 1.5s ease-in-out infinite" }} />
+          <img src={collarixLogo} alt="Collarix" style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 16, animation: "collarix-pulse 1.5s ease-in-out infinite" }} />
           <div style={{ color: "#7A8B6A", fontSize: 14, fontWeight: 600 }}>Loading Collarix…</div>
         </div>
       </div>
@@ -1718,20 +1795,20 @@ export default function App() {
       case "reminders": return activePet ? <RemindersScreen pet={activePet} user={user} /> : null;
       case "blog": return <BlogScreen user={user} />;
       case "qrgenerator": return <QRGeneratorScreen pets={pets} />;
-      case "settings": return <SettingsScreen user={user} onLogout={() => setSession(null)} onInstall={handleInstallClick} canInstall={canInstall} isInstalled={isInstalled} isIOS={isIOS} />;
+      case "settings": return <SettingsScreen user={user} onLogout={() => setSession(null)} onInstall={handleInstallClick} canInstall={canInstall} isInstalled={isInstalled} isIOS={isIOS} darkMode={darkMode} onToggleDark={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("collarix-dark", next ? "1" : "0"); }} />;
       default: return null;
     }
   }
 
   return (
-    <div style={{ maxWidth: 430, margin: "0 auto", background: "#F7F5F0", minHeight: "100vh", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ maxWidth: 430, margin: "0 auto", background: darkMode ? "#1A1F17" : "#F7F5F0", minHeight: "100vh", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: darkMode ? "#E8EDE4" : "#2C3520" }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 0; }
         input, select, textarea { -webkit-appearance: none; }
-        @keyframes novatech-pulse { 0%,100%{opacity:0.055} 50%{opacity:0.09} }
+        @keyframes collarix-pulse { 0%,100%{opacity:0.055} 50%{opacity:0.09} }
       `}</style>
       {showInstallBanner && !isInstalled && (
         <InstallBanner onInstall={handleInstallClick} onDismiss={handleDismissBanner} />
@@ -1741,7 +1818,7 @@ export default function App() {
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, height: "100vh", pointerEvents: "none", zIndex: 9999, overflow: "hidden" }}>
         {Array.from({ length: 16 }).map((_, i) => {
           const row = Math.floor(i / 4); const col = i % 4;
-          return <div key={i} style={{ position: "absolute", left: `${col * 28 - 10 + (row % 2) * 14}%`, top: `${row * 14 - 2}%`, transform: "rotate(-35deg)", fontFamily: "'Georgia', serif", fontSize: 11, fontWeight: 700, color: "#3A5A30", opacity: 0.045, letterSpacing: "3px", textTransform: "uppercase", whiteSpace: "nowrap", userSelect: "none", animation: "novatech-pulse 5s ease-in-out infinite", animationDelay: `${(i * 0.4) % 5}s` }}>collarix</div>;
+          return <div key={i} style={{ position: "absolute", left: `${col * 28 - 10 + (row % 2) * 14}%`, top: `${row * 14 - 2}%`, transform: "rotate(-35deg)", fontFamily: "'Georgia', serif", fontSize: 11, fontWeight: 700, color: "#3A5A30", opacity: 0.045, letterSpacing: "3px", textTransform: "uppercase", whiteSpace: "nowrap", userSelect: "none", animation: "collarix-pulse 5s ease-in-out infinite", animationDelay: `${(i * 0.4) % 5}s` }}>collarix</div>;
         })}
         {/* Collarix corner badge */}
         <div style={{ position: "absolute", bottom: 88, right: 12, background: "rgba(74,103,65,0.07)", border: "1px solid rgba(74,103,65,0.12)", borderRadius: 10, padding: "5px 10px", display: "flex", alignItems: "center", gap: 6 }}>
@@ -1749,7 +1826,7 @@ export default function App() {
           <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "1.5px", textTransform: "uppercase", color: "#4A6741", opacity: 0.6, fontFamily: "-apple-system, sans-serif" }}>Collarix</span>
         </div>
       </div>
-      <AppHeader screen={screen} pet={activePet} onBack={handleBack} onQR={() => setScreen("qrgenerator")} />
+      <AppHeader screen={screen} pet={activePet} onBack={handleBack} onQR={() => setScreen("qrgenerator")} darkMode={darkMode} onToggleDark={() => { const next = !darkMode; setDarkMode(next); localStorage.setItem("collarix-dark", next ? "1" : "0"); }} />
       <div style={{ paddingBottom: 80, overflowY: "auto", maxHeight: "calc(100vh - 50px)" }}>
         {renderScreen()}
       </div>
