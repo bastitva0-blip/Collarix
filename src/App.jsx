@@ -119,9 +119,10 @@ function LoginScreen() {
 
   async function handleForgot() {
     if (!email) { setError("Enter your email first."); return; }
-    const { error: e } = await supabase.auth.resetPasswordForEmail(email);
+    const redirectTo = `${window.location.origin.includes("localhost") ? "https://collarix.vercel.app" : window.location.origin}/reset-password`;
+    const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     if (e) setError(e.message);
-    else setInfo("Password reset email sent!");
+    else setInfo("Password reset email sent! Check your inbox.");
   }
 
   return (
@@ -138,7 +139,7 @@ function LoginScreen() {
         <div style={{ display: "flex", background: "#F7F5F0", borderRadius: 12, padding: 4, marginBottom: 24 }}>
           {["login", "signup"].map(t => (
             <button key={t} onClick={() => { setTab(t); setError(""); setInfo(""); }} style={{ flex: 1, padding: "10px", border: "none", borderRadius: 9, cursor: "pointer", fontWeight: 600, fontSize: 13, background: tab === t ? "white" : "transparent", color: tab === t ? "#2C3520" : "#9AA88A", boxShadow: tab === t ? "0 2px 8px rgba(0,0,0,0.08)" : "none", transition: "all 0.2s" }}>
-              {t === "login" ? "Sign In" : "Sign Up"}
+              {t === "login" ? "Log In" : "Sign Up"}
             </button>
           ))}
         </div>
@@ -156,7 +157,7 @@ function LoginScreen() {
             </div>
           )}
           <button onClick={handleAuth} disabled={loading} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, cursor: loading ? "not-allowed" : "pointer", marginTop: 4, boxShadow: "0 4px 14px #4A674140", opacity: loading ? 0.7 : 1 }}>
-            {loading ? "Please wait…" : tab === "login" ? "Sign In" : "Create Account"}
+            {loading ? "Please wait…" : tab === "login" ? "Log In" : "Create Account"}
           </button>
         </div>
       </div>
@@ -1158,12 +1159,61 @@ function BlogScreen({ user }) {
 // ── QR GENERATOR ──────────────────────────────────────────────────────────────
 function QRGeneratorScreen({ pets }) {
   const [selected, setSelected] = useState(pets[0] || null);
+  const [qrLoaded, setQrLoaded] = useState(false);
+  const [qrError, setQrError] = useState(false);
+
+  const petUrl = selected ? `https://collarix.vercel.app/pet/${selected.id}` : "";
+  const qrApiUrl = selected
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(petUrl)}&color=2C3520&bgcolor=FFFFFF&qzone=2&format=png`
+    : "";
+
+  useEffect(() => {
+    setQrLoaded(false);
+    setQrError(false);
+  }, [selected?.id]);
+
+  async function handleDownload() {
+    try {
+      const resp = await fetch(qrApiUrl);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${selected.name}-collarix-qr.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("QR downloaded!");
+    } catch {
+      toast("Download failed. Try again.");
+    }
+  }
+
+  // Paw print decorative SVG border path points
+  const PAW_POSITIONS = [
+    { x: 18, y: 18 }, { x: 52, y: 6 }, { x: 86, y: 18 },
+    { x: 100, y: 52 }, { x: 86, y: 86 }, { x: 52, y: 100 },
+    { x: 18, y: 86 }, { x: 6, y: 52 },
+  ];
+
+  function PawDot({ cx, cy, size = 5 }) {
+    return (
+      <g transform={`translate(${cx},${cy})`}>
+        <circle r={size} fill="#4A6741" opacity="0.18" />
+        <circle r={size * 0.55} cx={-size * 0.55} cy={-size * 0.7} fill="#4A6741" opacity="0.22" />
+        <circle r={size * 0.55} cx={size * 0.55} cy={-size * 0.7} fill="#4A6741" opacity="0.22" />
+        <circle r={size * 0.45} cx={-size * 0.9} cy={-size * 0.1} fill="#4A6741" opacity="0.2" />
+        <circle r={size * 0.45} cx={size * 0.9} cy={-size * 0.1} fill="#4A6741" opacity="0.2" />
+      </g>
+    );
+  }
+
   return (
     <div style={{ padding: "0 16px 16px" }}>
       <div style={{ padding: "20px 0 16px" }}>
-        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🔳 QR Profiles</h2>
+        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🐾 QR Profiles</h2>
         <p style={{ color: "#7A8B6A", fontSize: 13, margin: "4px 0 0" }}>Share your pet's profile instantly</p>
       </div>
+
       {pets.length === 0 ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "#9AA88A" }}>
           <QrCode size={36} style={{ opacity: 0.3, marginBottom: 12 }} />
@@ -1171,26 +1221,114 @@ function QRGeneratorScreen({ pets }) {
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", gap: 10, marginBottom: 16, overflowX: "auto" }}>
+          {/* Pet selector chips */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 20, overflowX: "auto", paddingBottom: 4 }}>
             {pets.map(p => (
-              <button key={p.id} onClick={() => setSelected(p)} style={{ padding: "8px 16px", borderRadius: 20, border: "1.5px solid", borderColor: selected?.id === p.id ? "#4A6741" : "#DDE5D8", background: selected?.id === p.id ? "#4A6741" : "white", color: selected?.id === p.id ? "white" : "#7A8B6A", fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <button key={p.id} onClick={() => setSelected(p)} style={{
+                padding: "8px 16px", borderRadius: 20, border: "1.5px solid",
+                borderColor: selected?.id === p.id ? "#4A6741" : "#DDE5D8",
+                background: selected?.id === p.id ? "#4A6741" : "white",
+                color: selected?.id === p.id ? "white" : "#7A8B6A",
+                fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0
+              }}>
                 {p.photo} {p.name}
               </button>
             ))}
           </div>
+
           {selected && (
-            <div style={{ background: "white", borderRadius: 20, padding: 24, textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ width: 160, height: 160, margin: "0 auto 16px", background: "#F0F4EC", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 80 }}>
-                {selected.photo}
+            <div style={{ background: "white", borderRadius: 24, padding: "24px 20px 20px", textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+
+              {/* Pet name & breed */}
+              <div style={{ fontFamily: "'Georgia', serif", fontSize: 22, fontWeight: 700, color: "#2C3520" }}>
+                {selected.photo} {selected.name}
               </div>
-              <div style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, color: "#2C3520" }}>{selected.name}</div>
-              <div style={{ color: "#7A8B6A", fontSize: 13, marginTop: 4 }}>{selected.breed} · {selected.species}</div>
-              <div style={{ marginTop: 16, padding: "10px 16px", background: "#F7F9F6", borderRadius: 12, fontSize: 12, color: "#9AA88A", wordBreak: "break-all" }}>
-                collarix.app/pet/{selected.id}
+              <div style={{ color: "#9AA88A", fontSize: 13, marginTop: 3, marginBottom: 20 }}>
+                {selected.breed || (selected.species === "cat" ? "Cat" : "Dog")} · {selected.species}
               </div>
-              <button onClick={() => { navigator.clipboard?.writeText(`collarix.app/pet/${selected.id}`); toast("Link copied!"); }} style={{ marginTop: 12, background: "#4A6741", color: "white", border: "none", borderRadius: 12, padding: "12px 24px", fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-                📋 Copy Link
-              </button>
+
+              {/* QR Code with paw-print frame */}
+              <div style={{ position: "relative", display: "inline-block", marginBottom: 18 }}>
+                {/* Outer decorative paw ring */}
+                <svg width="108" height="108" viewBox="0 0 108 108"
+                  style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "calc(100% + 36px)", height: "calc(100% + 36px)", pointerEvents: "none" }}>
+                  {PAW_POSITIONS.map((pos, i) => (
+                    <PawDot key={i} cx={pos.x} cy={pos.y} size={5} />
+                  ))}
+                  <rect x="8" y="8" width="92" height="92" rx="18" fill="none" stroke="#4A6741" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.2" />
+                </svg>
+
+                {/* QR image frame */}
+                <div style={{
+                  width: 200, height: 200, borderRadius: 18,
+                  background: "#F7F9F6",
+                  border: "2.5px solid #D8E4D3",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  overflow: "hidden", position: "relative",
+                  boxShadow: "0 4px 16px rgba(74,103,65,0.12)"
+                }}>
+                  {/* Corner paw decorations */}
+                  {[{top:8,left:8},{top:8,right:8},{bottom:8,left:8},{bottom:8,right:8}].map((pos,i) => (
+                    <span key={i} style={{ position:"absolute", ...pos, fontSize:13, opacity:0.25, lineHeight:1 }}>🐾</span>
+                  ))}
+
+                  {!qrError ? (
+                    <>
+                      {!qrLoaded && (
+                        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8 }}>
+                          <Loader size={22} color="#4A6741" style={{ animation:"spin 1s linear infinite" }} />
+                          <span style={{ fontSize:11, color:"#9AA88A" }}>Generating QR…</span>
+                        </div>
+                      )}
+                      <img
+                        src={qrApiUrl}
+                        alt={`QR code for ${selected.name}`}
+                        onLoad={() => setQrLoaded(true)}
+                        onError={() => setQrError(true)}
+                        style={{
+                          width: 170, height: 170,
+                          display: qrLoaded ? "block" : "none",
+                          borderRadius: 8, imageRendering: "pixelated"
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <div style={{ color:"#9AA88A", fontSize:12, padding:16 }}>
+                      <QrCode size={32} style={{ opacity:0.3, display:"block", margin:"0 auto 8px" }} />
+                      Failed to load QR
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Profile URL */}
+              <div style={{
+                background: "#F0F5EE", borderRadius: 12, padding: "8px 14px",
+                fontSize: 11, color: "#7A8B6A", wordBreak: "break-all",
+                fontFamily: "monospace", marginBottom: 16, border: "1px solid #DDE8D8"
+              }}>
+                {petUrl}
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => { navigator.clipboard?.writeText(petUrl); toast("Link copied!"); }}
+                  style={{ flex: 1, background: "#F0F5EE", color: "#4A6741", border: "1.5px solid #C8D9C4", borderRadius: 12, padding: "11px", fontWeight: 700, cursor: "pointer", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  <Share2 size={14} /> Copy Link
+                </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={!qrLoaded}
+                  style={{ flex: 1, background: qrLoaded ? "#4A6741" : "#C5D0BE", color: "white", border: "none", borderRadius: 12, padding: "11px", fontWeight: 700, cursor: qrLoaded ? "pointer" : "not-allowed", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"background 0.2s" }}>
+                  <Download size={14} /> Download QR
+                </button>
+              </div>
+
+              {/* Tip */}
+              <p style={{ marginTop: 14, fontSize: 11, color: "#B0BDA8", lineHeight: 1.5 }}>
+                🐶 Anyone who scans this QR will see {selected.name}'s public profile
+              </p>
             </div>
           )}
         </>
