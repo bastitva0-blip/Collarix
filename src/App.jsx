@@ -96,18 +96,23 @@ function LoginScreen() {
   async function handleAuth() {
     setError(""); setInfo("");
     if (!email || !pass) { setError("Please enter email and password."); return; }
+    if (pass.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
-    if (tab === "login") {
-      const { error: e } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (e) setError(e.message);
-    } else {
-      if (!fullName) { setError("Please enter your full name."); setLoading(false); return; }
-      const { error: e } = await supabase.auth.signUp({
-        email, password: pass,
-        options: { data: { full_name: fullName } }
-      });
-      if (e) setError(e.message);
-      else setInfo("Account created! Check your email to confirm, then sign in.");
+    try {
+      if (tab === "login") {
+        const { error: e } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pass });
+        if (e) setError(e.message || "Login failed. Please check your credentials.");
+      } else {
+        if (!fullName.trim()) { setError("Please enter your full name."); setLoading(false); return; }
+        const { data, error: e } = await supabase.auth.signUp({
+          email: email.trim(), password: pass,
+          options: { data: { full_name: fullName.trim() } }
+        });
+        if (e) { setError(e.message || "Signup failed. Please try again."); }
+        else if (data?.user) { setInfo("Account created! Signing you in..."); setTab("login"); }
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
     }
     setLoading(false);
   }
@@ -141,10 +146,10 @@ function LoginScreen() {
         {info && <div style={{ background: "#E8F4E8", color: "#2E7D32", borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 14 }}>{info}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {tab === "signup" && (
-            <input style={inputStyle} placeholder="Full name" value={fullName} onChange={e => setFullName(e.target.value)} />
+            <input style={inputStyle} placeholder="Full name" value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" />
           )}
-          <input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email" />
-          <input style={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="Password" type="password" onKeyDown={e => e.key === "Enter" && handleAuth()} />
+          <input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email" autoComplete="email" />
+          <input style={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="Password (min 6 chars)" type="password" autoComplete={tab === "signup" ? "new-password" : "current-password"} onKeyDown={e => e.key === "Enter" && handleAuth()} />
           {tab === "login" && (
             <div style={{ textAlign: "right", marginTop: -6 }}>
               <span onClick={handleForgot} style={{ color: "#7A8B6A", fontSize: 12, cursor: "pointer" }}>Forgot password?</span>
