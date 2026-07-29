@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
 import collarixLogo from "./collarix-logo.svg";
+import QRCodeStyling from "qr-code-styling";
 
 // ── PWA INSTALL BANNER ────────────────────────────────────────────────────────
 function useInstallPrompt() {
@@ -1270,29 +1271,86 @@ function BlogScreen({ user }) {
 }
 
 // ── QR GENERATOR ──────────────────────────────────────────────────────────────
-function QRGeneratorScreen({ pets }) {
-  const [selected, setSelected] = useState(pets[0] || null);
-  const [qrLoaded, setQrLoaded] = useState(false);
-  const [qrError, setQrError] = useState(false);
+// ── STYLED QR CODE (rounded squares, pet color) ───────────────────────────────
+function PetQRCode({ url, color, petName, onReady }) {
+  const containerRef = useRef(null);
+  const qrRef = useRef(null);
 
-  const petUrl = selected ? `https://collarix.vercel.app/pet/${selected.id}` : "";
-  const qrApiUrl = selected
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(petUrl)}&color=2C3520&bgcolor=FFFFFF&qzone=2&format=png`
-    : "";
+  // Darken a hex color slightly for better contrast on white
+  function darkenHex(hex) {
+    const h = hex.replace("#", "");
+    const r = Math.max(0, parseInt(h.slice(0,2),16) - 40);
+    const g = Math.max(0, parseInt(h.slice(2,4),16) - 40);
+    const b = Math.max(0, parseInt(h.slice(4,6),16) - 40);
+    return `#${r.toString(16).padStart(2,"0")}${g.toString(16).padStart(2,"0")}${b.toString(16).padStart(2,"0")}`;
+  }
+
+  const dotColor = color ? darkenHex(color) : "#2C3520";
 
   useEffect(() => {
-    setQrLoaded(false);
-    setQrError(false);
-  }, [selected?.id]);
+    if (!containerRef.current || !url) return;
+
+    // Clear previous
+    containerRef.current.innerHTML = "";
+
+    qrRef.current = new QRCodeStyling({
+      width: 190,
+      height: 190,
+      type: "svg",
+      data: url,
+      margin: 6,
+      dotsOptions: {
+        color: dotColor,
+        type: "rounded",
+      },
+      cornersSquareOptions: {
+        type: "extra-rounded",
+        color: dotColor,
+      },
+      cornersDotOptions: {
+        type: "dot",
+        color: dotColor,
+      },
+      backgroundOptions: {
+        color: "#FFFFFF",
+      },
+    });
+
+    qrRef.current.append(containerRef.current);
+    // Signal ready after a short render tick
+    const t = setTimeout(() => onReady && onReady(), 120);
+    return () => clearTimeout(t);
+  }, [url, dotColor]);
+
+  return (
+    <div ref={containerRef}
+      style={{ width: 190, height: 190, display: "flex", alignItems: "center", justifyContent: "center" }}
+    />
+  );
+}
+
+function QRGeneratorScreen({ pets }) {
+  const [selected, setSelected] = useState(pets[0] || null);
+  const [qrReady, setQrReady] = useState(false);
+  const containerRef = useRef(null);
+
+  const petUrl = selected ? `https://collarix.vercel.app/pet/${selected.id}` : "";
+  const petColor = selected?.color || "#4A6741";
+
+  // Reset ready state when switching pets
+  useEffect(() => { setQrReady(false); }, [selected?.id]);
 
   async function handleDownload() {
+    if (!containerRef.current) return;
     try {
-      const resp = await fetch(qrApiUrl);
-      const blob = await resp.blob();
+      const svg = containerRef.current.querySelector("svg");
+      if (!svg) { toast("QR not ready yet"); return; }
+      const serialized = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([serialized], { type: "image/svg+xml" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${selected.name}-collarix-qr.png`;
+      a.download = `${selected.name}-collarix-qr.svg`;
       a.click();
       URL.revokeObjectURL(url);
       toast("QR downloaded!");
@@ -1301,23 +1359,13 @@ function QRGeneratorScreen({ pets }) {
     }
   }
 
-  // Paw print decorative SVG border path points
-  const PAW_POSITIONS = [
-    { x: 18, y: 18 }, { x: 52, y: 6 }, { x: 86, y: 18 },
-    { x: 100, y: 52 }, { x: 86, y: 86 }, { x: 52, y: 100 },
-    { x: 18, y: 86 }, { x: 6, y: 52 },
-  ];
-
-  function PawDot({ cx, cy, size = 5 }) {
-    return (
-      <g transform={`translate(${cx},${cy})`}>
-        <circle r={size} fill="#4A6741" opacity="0.18" />
-        <circle r={size * 0.55} cx={-size * 0.55} cy={-size * 0.7} fill="#4A6741" opacity="0.22" />
-        <circle r={size * 0.55} cx={size * 0.55} cy={-size * 0.7} fill="#4A6741" opacity="0.22" />
-        <circle r={size * 0.45} cx={-size * 0.9} cy={-size * 0.1} fill="#4A6741" opacity="0.2" />
-        <circle r={size * 0.45} cx={size * 0.9} cy={-size * 0.1} fill="#4A6741" opacity="0.2" />
-      </g>
-    );
+  // Lightened tint for the card background
+  function tintBg(hex) {
+    const h = (hex || "#4A6741").replace("#","");
+    const r = Math.min(255, parseInt(h.slice(0,2),16) + 90);
+    const g = Math.min(255, parseInt(h.slice(2,4),16) + 100);
+    const b = Math.min(255, parseInt(h.slice(4,6),16) + 90);
+    return `rgba(${r},${g},${b},0.12)`;
   }
 
   return (
@@ -1339,10 +1387,11 @@ function QRGeneratorScreen({ pets }) {
             {pets.map(p => (
               <button key={p.id} onClick={() => setSelected(p)} style={{
                 padding: "8px 16px", borderRadius: 20, border: "1.5px solid",
-                borderColor: selected?.id === p.id ? "#4A6741" : "#DDE5D8",
-                background: selected?.id === p.id ? "#4A6741" : "white",
+                borderColor: selected?.id === p.id ? (p.color || "#4A6741") : "#DDE5D8",
+                background: selected?.id === p.id ? (p.color || "#4A6741") : "white",
                 color: selected?.id === p.id ? "white" : "#7A8B6A",
-                fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0
+                fontWeight: 600, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                transition: "all 0.18s"
               }}>
                 {p.photo} {p.name}
               </button>
@@ -1350,78 +1399,73 @@ function QRGeneratorScreen({ pets }) {
           </div>
 
           {selected && (
-            <div style={{ background: "white", borderRadius: 24, padding: "24px 20px 20px", textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
-
-              {/* Pet name & breed */}
-              <div style={{ fontFamily: "'Georgia', serif", fontSize: 22, fontWeight: 700, color: "#2C3520" }}>
-                {selected.photo} {selected.name}
-              </div>
-              <div style={{ color: "#9AA88A", fontSize: 13, marginTop: 3, marginBottom: 6 }}>
-                {selected.breed || (selected.species === "cat" ? "Cat" : "Dog")} · {selected.species}
-              </div>
-              <div style={{ fontSize: 11, color: "#B0BDA8", marginBottom: 18, letterSpacing: "1px" }}>
-                pet-{selected.id?.slice(0,3).toUpperCase() || "000"}
-              </div>
-
-              {/* QR Code with paw-print frame */}
-              <div style={{ position: "relative", display: "inline-block", marginBottom: 18 }}>
-                {/* Outer decorative paw ring */}
-                <svg width="108" height="108" viewBox="0 0 108 108"
-                  style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "calc(100% + 36px)", height: "calc(100% + 36px)", pointerEvents: "none" }}>
-                  {PAW_POSITIONS.map((pos, i) => (
-                    <PawDot key={i} cx={pos.x} cy={pos.y} size={5} />
-                  ))}
-                  <rect x="8" y="8" width="92" height="92" rx="18" fill="none" stroke="#4A6741" strokeWidth="1.2" strokeDasharray="4 3" opacity="0.2" />
-                </svg>
-
-                {/* QR image frame */}
+            <div style={{
+              background: "white", borderRadius: 24,
+              padding: "24px 20px 20px", textAlign: "center",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            }}>
+              {/* Coloured tint header strip */}
+              <div style={{
+                background: tintBg(petColor),
+                borderRadius: 16, padding: "16px 12px 14px",
+                marginBottom: 18,
+              }}>
+                <div style={{ fontSize: 36, marginBottom: 6 }}>{selected.photo}</div>
+                <div style={{ fontFamily: "'Georgia', serif", fontSize: 20, fontWeight: 700, color: "#2C3520" }}>
+                  {selected.name}
+                </div>
+                <div style={{ color: "#9AA88A", fontSize: 12, marginTop: 3 }}>
+                  {selected.breed || (selected.species === "cat" ? "Cat" : "Dog")}
+                </div>
                 <div style={{
-                  width: 200, height: 200, borderRadius: 18,
-                  background: "#F7F9F6",
-                  border: "2.5px solid #D8E4D3",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  overflow: "hidden", position: "relative",
-                  boxShadow: "0 4px 16px rgba(74,103,65,0.12)"
+                  display: "inline-block", marginTop: 6,
+                  background: "rgba(255,255,255,0.7)", borderRadius: 20,
+                  padding: "2px 10px", fontSize: 10, fontWeight: 700,
+                  color: petColor, letterSpacing: "1px"
                 }}>
-                  {/* Corner paw decorations */}
-                  {[{top:8,left:8},{top:8,right:8},{bottom:8,left:8},{bottom:8,right:8}].map((pos,i) => (
-                    <span key={i} style={{ position:"absolute", ...pos, fontSize:13, opacity:0.25, lineHeight:1 }}>🐾</span>
-                  ))}
-
-                  {!qrError ? (
-                    <>
-                      {!qrLoaded && (
-                        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8 }}>
-                          <Loader size={22} color="#4A6741" style={{ animation:"spin 1s linear infinite" }} />
-                          <span style={{ fontSize:11, color:"#9AA88A" }}>Generating QR…</span>
-                        </div>
-                      )}
-                      <img
-                        src={qrApiUrl}
-                        alt={`QR code for ${selected.name}`}
-                        onLoad={() => setQrLoaded(true)}
-                        onError={() => setQrError(true)}
-                        style={{
-                          width: 170, height: 170,
-                          display: qrLoaded ? "block" : "none",
-                          borderRadius: 8, imageRendering: "pixelated"
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <div style={{ color:"#9AA88A", fontSize:12, padding:16 }}>
-                      <QrCode size={32} style={{ opacity:0.3, display:"block", margin:"0 auto 8px" }} />
-                      Failed to load QR
-                    </div>
-                  )}
+                  pet-{String(pets.indexOf(selected) + 1).padStart(3,"0")}
                 </div>
               </div>
 
-              {/* Profile URL */}
+              {/* QR Code frame */}
               <div style={{
-                background: "#F0F5EE", borderRadius: 12, padding: "8px 14px",
-                fontSize: 11, color: "#7A8B6A", wordBreak: "break-all",
-                fontFamily: "monospace", marginBottom: 16, border: "1px solid #DDE8D8"
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                background: "#FFFFFF",
+                border: `2.5px solid ${petColor}30`,
+                borderRadius: 20,
+                padding: 8,
+                boxShadow: `0 4px 20px ${petColor}25`,
+                marginBottom: 18,
+                position: "relative",
+              }}>
+                {/* Loading shimmer */}
+                {!qrReady && (
+                  <div style={{
+                    position: "absolute", inset: 0, borderRadius: 18,
+                    background: "#F7F9F6",
+                    display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8
+                  }}>
+                    <Loader size={22} color={petColor} style={{ animation: "spin 1s linear infinite" }} />
+                    <span style={{ fontSize: 11, color: "#9AA88A" }}>Generating QR…</span>
+                  </div>
+                )}
+                <div ref={containerRef} style={{ opacity: qrReady ? 1 : 0, transition: "opacity 0.3s" }}>
+                  <PetQRCode
+                    url={petUrl}
+                    color={petColor}
+                    petName={selected.name}
+                    onReady={() => setQrReady(true)}
+                  />
+                </div>
+              </div>
+
+              {/* Profile URL pill */}
+              <div style={{
+                background: tintBg(petColor),
+                borderRadius: 12, padding: "8px 14px",
+                fontSize: 11, color: "#5A6A50", wordBreak: "break-all",
+                fontFamily: "monospace", marginBottom: 16,
+                border: `1px solid ${petColor}25`
               }}>
                 {petUrl}
               </div>
@@ -1430,20 +1474,19 @@ function QRGeneratorScreen({ pets }) {
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => { navigator.clipboard?.writeText(petUrl); toast("Link copied!"); }}
-                  style={{ flex: 1, background: "#F0F5EE", color: "#4A6741", border: "1.5px solid #C8D9C4", borderRadius: 12, padding: "11px", fontWeight: 700, cursor: "pointer", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  style={{ flex: 1, background: tintBg(petColor), color: petColor, border: `1.5px solid ${petColor}40`, borderRadius: 12, padding: "11px", fontWeight: 700, cursor: "pointer", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   <Share2 size={14} /> Copy Link
                 </button>
                 <button
                   onClick={handleDownload}
-                  disabled={!qrLoaded}
-                  style={{ flex: 1, background: qrLoaded ? "#4A6741" : "#C5D0BE", color: "white", border: "none", borderRadius: 12, padding: "11px", fontWeight: 700, cursor: qrLoaded ? "pointer" : "not-allowed", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"background 0.2s" }}>
+                  disabled={!qrReady}
+                  style={{ flex: 1, background: qrReady ? petColor : "#C5D0BE", color: "white", border: "none", borderRadius: 12, padding: "11px", fontWeight: 700, cursor: qrReady ? "pointer" : "not-allowed", fontSize: 13, display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"background 0.2s" }}>
                   <Download size={14} /> Download QR
                 </button>
               </div>
 
-              {/* Tip */}
               <p style={{ marginTop: 14, fontSize: 11, color: "#B0BDA8", lineHeight: 1.5 }}>
-                🐶 Anyone who scans this QR will see {selected.name}'s public profile
+                🐶 Anyone who scans this will see {selected.name}'s public profile
               </p>
             </div>
           )}
