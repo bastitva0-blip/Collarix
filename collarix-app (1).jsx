@@ -1,0 +1,1574 @@
+import { useState, useEffect, useRef } from "react";
+import {
+  PawPrint, QrCode, Bell, BookOpen, Settings, Home, ChevronRight,
+  Plus, Camera, MapPin, Droplets, Utensils, Stethoscope, Trash2,
+  Edit3, X, Check, Clock, Calendar, Weight, Ruler, Heart,
+  AlertCircle, Phone, Mail, User, ChevronLeft, LogOut, Search,
+  Activity, Shield, Syringe, Pill, Scissors, Star, ArrowRight,
+  Wifi, Download,
+  MessageCircle, Navigation,
+  RefreshCw, CheckCircle, XCircle, Info
+} from "lucide-react";
+
+// ── DEMO DATA ────────────────────────────────────────────────────────────────
+const DEMO_PETS = [
+  {
+    id: "pet-001", name: "Luna", species: "cat", breed: "Persian", age: 3,
+    dob: "2021-03-12", weight: 4.2, height: 28, sex: "Female",
+    photo: "🐱", color: "#A8C5A0",
+    owner: { name: "Priya Sharma", phone: "+91 98765 43210", email: "priya@email.com", address: "12 Rose Lane, Lucknow" },
+    emergency: { name: "Rahul Sharma", phone: "+91 87654 32109", relation: "Spouse" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-01-15", next: "2025-01-15", status: "up-to-date" },
+        { name: "FVRCP", date: "2023-11-20", next: "2024-11-20", status: "due-soon" },
+      ],
+      allergies: ["Fish", "Dust mites"],
+      conditions: ["Mild asthma"],
+      medications: [{ name: "Fluticasone", dose: "0.5mg", freq: "Daily" }]
+    },
+    food: [
+      { time: "08:00", meal: "Breakfast", item: "Royal Canin Persian", qty: "80g", notes: "Warm water added", date: "2025-07-29" },
+      { time: "13:00", meal: "Lunch", item: "Wet food - Whiskas", qty: "100g", notes: "", date: "2025-07-29" },
+      { time: "19:00", meal: "Dinner", item: "Royal Canin Persian", qty: "80g", notes: "", date: "2025-07-28" },
+    ],
+    water: [
+      { time: "08:15", amount: "150ml", date: "2025-07-29" },
+      { time: "14:00", amount: "200ml", date: "2025-07-29" },
+    ],
+    litter: { status: "clean", lastCleaned: "2025-07-29 07:30", history: ["2025-07-29 07:30", "2025-07-28 08:00", "2025-07-27 07:45"] },
+    vet: {
+      upcoming: [{ date: "2025-08-10", clinic: "Happy Paws Clinic", reason: "Annual checkup", vet: "Dr. Meera Joshi" }],
+      past: [{ date: "2025-04-22", clinic: "Happy Paws Clinic", reason: "Asthma follow-up", notes: "Stable, continue medication" }]
+    },
+    reminders: [
+      { id: "r1", type: "feeding", title: "Breakfast", time: "08:00", active: true },
+      { id: "r2", type: "medication", title: "Fluticasone dose", time: "09:00", active: true },
+      { id: "r3", type: "litter", title: "Clean litter box", time: "07:30", active: true },
+    ]
+  },
+  {
+    id: "pet-002", name: "Max", species: "dog", breed: "Golden Retriever", age: 5,
+    dob: "2020-06-08", weight: 28.5, height: 60, sex: "Male",
+    photo: "🐕", color: "#D4A853",
+    owner: { name: "Arjun Kapoor", phone: "+91 97654 32100", email: "arjun@email.com", address: "45 MG Road, Bangalore" },
+    emergency: { name: "Sunita Kapoor", phone: "+91 86543 21098", relation: "Mother" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-06-01", next: "2025-06-01", status: "up-to-date" },
+        { name: "DHPP", date: "2024-06-01", next: "2025-06-01", status: "up-to-date" },
+        { name: "Bordetella", date: "2024-03-10", next: "2025-03-10", status: "overdue" },
+      ],
+      allergies: ["Chicken", "Pollen"],
+      conditions: ["Hip dysplasia (mild)"],
+      medications: [{ name: "Carprofen", dose: "25mg", freq: "Twice daily" }]
+    },
+    food: [
+      { time: "07:00", meal: "Breakfast", item: "Pedigree Adult", qty: "250g", notes: "With joint supplement", date: "2025-07-29" },
+      { time: "18:00", meal: "Dinner", item: "Pedigree Adult", qty: "250g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "07:10", amount: "400ml", date: "2025-07-29" },
+      { time: "12:30", amount: "350ml", date: "2025-07-29" },
+      { time: "18:10", amount: "400ml", date: "2025-07-29" },
+    ],
+    litter: { status: "N/A", lastCleaned: "N/A", history: [] },
+    vet: {
+      upcoming: [{ date: "2025-07-31", clinic: "City Vet Hospital", reason: "Hip X-ray follow-up", vet: "Dr. Rajesh Kumar" }],
+      past: [{ date: "2025-01-15", clinic: "City Vet Hospital", reason: "Hip dysplasia diagnosis", notes: "Start Carprofen, restrict jumping" }]
+    },
+    reminders: [
+      { id: "r1", type: "feeding", title: "Breakfast", time: "07:00", active: true },
+      { id: "r2", type: "medication", title: "Carprofen AM dose", time: "07:30", active: true },
+      { id: "r3", type: "grooming", title: "Weekly brush", time: "10:00", active: false },
+    ]
+  },
+  {
+    id: "pet-003", name: "Mochi", species: "cat", breed: "Scottish Fold", age: 2,
+    dob: "2023-01-25", weight: 3.8, height: 25, sex: "Female",
+    photo: "😺", color: "#9DB8C8",
+    owner: { name: "Tanya Singh", phone: "+91 96543 21000", email: "tanya@email.com", address: "7 Lake View, Chennai" },
+    emergency: { name: "Vikram Singh", phone: "+91 85432 10987", relation: "Father" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-02-10", next: "2025-02-10", status: "overdue" },
+        { name: "FVRCP", date: "2024-02-10", next: "2025-02-10", status: "overdue" },
+      ],
+      allergies: [],
+      conditions: ["None"],
+      medications: []
+    },
+    food: [
+      { time: "08:30", meal: "Breakfast", item: "Sheba Premium", qty: "70g", notes: "", date: "2025-07-29" },
+      { time: "20:00", meal: "Dinner", item: "Hills Science Diet", qty: "60g", notes: "", date: "2025-07-29" },
+    ],
+    water: [{ time: "08:45", amount: "120ml", date: "2025-07-29" }],
+    litter: { status: "needs-cleaning", lastCleaned: "2025-07-28 18:00", history: ["2025-07-28 18:00", "2025-07-27 17:30"] },
+    vet: {
+      upcoming: [{ date: "2025-08-05", clinic: "Feline Care Center", reason: "Vaccination overdue", vet: "Dr. Anika Mehta" }],
+      past: []
+    },
+    reminders: [
+      { id: "r1", type: "vaccination", title: "Overdue vaccinations", time: "09:00", active: true },
+      { id: "r2", type: "litter", title: "Clean litter - overdue", time: "07:00", active: true },
+    ]
+  },
+  {
+    id: "pet-004", name: "Bruno", species: "dog", breed: "Labrador", age: 7,
+    dob: "2018-09-14", weight: 32, height: 58, sex: "Male",
+    photo: "🐶", color: "#C4956A",
+    owner: { name: "Sameer Patel", phone: "+91 95432 10998", email: "sameer@email.com", address: "23 Elm Street, Pune" },
+    emergency: { name: "Neha Patel", phone: "+91 84321 09876", relation: "Wife" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-09-14", next: "2025-09-14", status: "up-to-date" },
+        { name: "DHPP", date: "2024-09-14", next: "2025-09-14", status: "up-to-date" },
+      ],
+      allergies: ["Soy"],
+      conditions: ["Obesity risk", "Dental tartar"],
+      medications: [{ name: "ProDen PlaqueOff", dose: "1 scoop", freq: "Daily with food" }]
+    },
+    food: [
+      { time: "07:30", meal: "Breakfast", item: "Hills Adult Large Breed", qty: "200g", notes: "Dental powder added", date: "2025-07-29" },
+      { time: "19:00", meal: "Dinner", item: "Hills Adult Large Breed", qty: "200g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "07:35", amount: "500ml", date: "2025-07-29" },
+      { time: "14:00", amount: "450ml", date: "2025-07-29" },
+    ],
+    litter: { status: "N/A", lastCleaned: "N/A", history: [] },
+    vet: {
+      upcoming: [],
+      past: [{ date: "2025-06-01", clinic: "Pets R Us", reason: "Dental cleaning", notes: "Good, annual dental next year" }]
+    },
+    reminders: [
+      { id: "r1", type: "feeding", title: "Breakfast", time: "07:30", active: true },
+      { id: "r2", type: "vet", title: "Annual checkup due", time: "10:00", active: false },
+    ]
+  },
+  {
+    id: "pet-005", name: "Cleo", species: "cat", breed: "Siamese", age: 4,
+    dob: "2021-11-03", weight: 3.5, height: 26, sex: "Female",
+    photo: "🐈", color: "#B8A9C9",
+    owner: { name: "Riya Nair", phone: "+91 94321 09987", email: "riya@email.com", address: "88 Palm Avenue, Kochi" },
+    emergency: { name: "Arun Nair", phone: "+91 83210 98765", relation: "Brother" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2025-01-20", next: "2026-01-20", status: "up-to-date" },
+        { name: "FVRCP", date: "2025-01-20", next: "2026-01-20", status: "up-to-date" },
+      ],
+      allergies: ["Wool"],
+      conditions: ["None"],
+      medications: []
+    },
+    food: [
+      { time: "07:00", meal: "Breakfast", item: "Purina ONE Siamese", qty: "65g", notes: "", date: "2025-07-29" },
+      { time: "19:30", meal: "Dinner", item: "Purina ONE Siamese", qty: "65g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "07:15", amount: "100ml", date: "2025-07-29" },
+      { time: "15:00", amount: "90ml", date: "2025-07-29" },
+    ],
+    litter: { status: "clean", lastCleaned: "2025-07-29 06:45", history: ["2025-07-29 06:45", "2025-07-28 07:00"] },
+    vet: { upcoming: [], past: [] },
+    reminders: [
+      { id: "r1", type: "feeding", title: "Breakfast", time: "07:00", active: true },
+      { id: "r2", type: "water", title: "Hydration check", time: "12:00", active: true },
+    ]
+  },
+  {
+    id: "pet-006", name: "Bolt", species: "dog", breed: "Beagle", age: 2,
+    dob: "2023-04-17", weight: 11, height: 38, sex: "Male",
+    photo: "🐕‍🦺", color: "#E8A87C",
+    owner: { name: "Dev Malhotra", phone: "+91 93210 98876", email: "dev@email.com", address: "5 Maple Grove, Delhi" },
+    emergency: { name: "Priya Malhotra", phone: "+91 82109 87654", relation: "Mother" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-04-17", next: "2025-04-17", status: "overdue" },
+        { name: "DHPP", date: "2024-04-17", next: "2025-04-17", status: "overdue" },
+      ],
+      allergies: [],
+      conditions: ["None"],
+      medications: []
+    },
+    food: [
+      { time: "08:00", meal: "Breakfast", item: "Pedigree Puppy", qty: "120g", notes: "", date: "2025-07-29" },
+      { time: "13:00", meal: "Lunch", item: "Pedigree Puppy", qty: "100g", notes: "", date: "2025-07-29" },
+      { time: "19:00", meal: "Dinner", item: "Pedigree Puppy", qty: "120g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "08:10", amount: "200ml", date: "2025-07-29" },
+      { time: "13:10", amount: "180ml", date: "2025-07-29" },
+    ],
+    litter: { status: "N/A", lastCleaned: "N/A", history: [] },
+    vet: {
+      upcoming: [{ date: "2025-08-01", clinic: "Pawsome Vet", reason: "Overdue vaccinations", vet: "Dr. Preet Gill" }],
+      past: [{ date: "2025-04-17", clinic: "Pawsome Vet", reason: "Annual shots", notes: "Healthy, playful pup" }]
+    },
+    reminders: [
+      { id: "r1", type: "vaccination", title: "Overdue shots - book now", time: "09:00", active: true },
+      { id: "r2", type: "feeding", title: "Lunch", time: "13:00", active: true },
+    ]
+  },
+  {
+    id: "pet-007", name: "Whisker", species: "cat", breed: "Maine Coon", age: 6,
+    dob: "2019-07-22", weight: 6.8, height: 35, sex: "Male",
+    photo: "🦁", color: "#A0896B",
+    owner: { name: "Ishaan Roy", phone: "+91 92109 87765", email: "ishaan@email.com", address: "34 River Road, Kolkata" },
+    emergency: { name: "Meena Roy", phone: "+91 81098 76543", relation: "Mother" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2025-03-01", next: "2026-03-01", status: "up-to-date" },
+        { name: "FVRCP", date: "2025-03-01", next: "2026-03-01", status: "up-to-date" },
+      ],
+      allergies: ["Gluten"],
+      conditions: ["Polycystic kidney disease (early)"],
+      medications: [{ name: "Benazepril", dose: "2.5mg", freq: "Once daily" }]
+    },
+    food: [
+      { time: "07:00", meal: "Breakfast", item: "Hills k/d Kidney Care", qty: "85g", notes: "Low phosphorus", date: "2025-07-29" },
+      { time: "12:00", meal: "Lunch", item: "Hills k/d wet", qty: "85g", notes: "", date: "2025-07-29" },
+      { time: "19:00", meal: "Dinner", item: "Hills k/d Kidney Care", qty: "85g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "07:15", amount: "180ml", date: "2025-07-29" },
+      { time: "12:15", amount: "200ml", date: "2025-07-29" },
+      { time: "19:15", amount: "180ml", date: "2025-07-29" },
+    ],
+    litter: { status: "clean", lastCleaned: "2025-07-29 08:00", history: ["2025-07-29 08:00", "2025-07-28 08:00", "2025-07-27 07:55"] },
+    vet: {
+      upcoming: [{ date: "2025-08-15", clinic: "Bengal Pet Clinic", reason: "Kidney function blood test", vet: "Dr. Shoma Das" }],
+      past: [{ date: "2025-05-10", clinic: "Bengal Pet Clinic", reason: "PKD monitoring", notes: "Stable, continue diet" }]
+    },
+    reminders: [
+      { id: "r1", type: "medication", title: "Benazepril dose", time: "07:30", active: true },
+      { id: "r2", type: "water", title: "Hydration critical", time: "12:00", active: true },
+      { id: "r3", type: "vet", title: "Kidney test next month", time: "09:00", active: true },
+    ]
+  },
+  {
+    id: "pet-008", name: "Daisy", species: "dog", breed: "Shih Tzu", age: 4,
+    dob: "2021-02-14", weight: 6.5, height: 28, sex: "Female",
+    photo: "🐩", color: "#D4B8C0",
+    owner: { name: "Aarav Gupta", phone: "+91 91098 76654", email: "aarav@email.com", address: "67 Flower Street, Jaipur" },
+    emergency: { name: "Kavya Gupta", phone: "+91 80987 65432", relation: "Sister" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2025-02-14", next: "2026-02-14", status: "up-to-date" },
+        { name: "DHPP", date: "2025-02-14", next: "2026-02-14", status: "up-to-date" },
+      ],
+      allergies: ["Corn", "Artificial colors"],
+      conditions: ["None"],
+      medications: []
+    },
+    food: [
+      { time: "08:00", meal: "Breakfast", item: "Royal Canin Shih Tzu", qty: "90g", notes: "", date: "2025-07-29" },
+      { time: "19:00", meal: "Dinner", item: "Royal Canin Shih Tzu", qty: "90g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "08:10", amount: "250ml", date: "2025-07-29" },
+    ],
+    litter: { status: "N/A", lastCleaned: "N/A", history: [] },
+    vet: { upcoming: [], past: [] },
+    reminders: [
+      { id: "r1", type: "grooming", title: "Monthly grooming due", time: "11:00", active: true },
+      { id: "r2", type: "feeding", title: "Breakfast", time: "08:00", active: true },
+    ]
+  },
+  {
+    id: "pet-009", name: "Simba", species: "cat", breed: "Bengal", age: 1,
+    dob: "2024-05-10", weight: 2.9, height: 22, sex: "Male",
+    photo: "🐆", color: "#C9A84C",
+    owner: { name: "Neha Verma", phone: "+91 90987 65543", email: "neha@email.com", address: "12 Jungle Row, Mumbai" },
+    emergency: { name: "Ankur Verma", phone: "+91 79876 54321", relation: "Husband" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-11-10", next: "2025-11-10", status: "up-to-date" },
+        { name: "FVRCP", date: "2024-11-10", next: "2025-11-10", status: "up-to-date" },
+      ],
+      allergies: [],
+      conditions: ["None"],
+      medications: []
+    },
+    food: [
+      { time: "09:00", meal: "Breakfast", item: "Kitten kibble - Orijen", qty: "55g", notes: "", date: "2025-07-29" },
+      { time: "21:00", meal: "Dinner", item: "Kitten kibble - Orijen", qty: "55g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "09:15", amount: "80ml", date: "2025-07-29" },
+    ],
+    litter: { status: "needs-cleaning", lastCleaned: "2025-07-28 20:00", history: ["2025-07-28 20:00"] },
+    vet: {
+      upcoming: [{ date: "2025-09-01", clinic: "City Cat Clinic", reason: "Neuter consult", vet: "Dr. Sonal Bapat" }],
+      past: []
+    },
+    reminders: [
+      { id: "r1", type: "vet", title: "Neuter consult booking", time: "10:00", active: true },
+      { id: "r2", type: "litter", title: "Clean litter box", time: "08:00", active: true },
+    ]
+  },
+  {
+    id: "pet-010", name: "Rocky", species: "dog", breed: "German Shepherd", age: 3,
+    dob: "2022-08-30", weight: 34, height: 65, sex: "Male",
+    photo: "🦮", color: "#8B9E6B",
+    owner: { name: "Kabir Mehta", phone: "+91 89876 54432", email: "kabir@email.com", address: "9 Guard Lane, Ahmedabad" },
+    emergency: { name: "Zara Mehta", phone: "+91 78765 43210", relation: "Wife" },
+    health: {
+      vaccinations: [
+        { name: "Rabies", date: "2024-08-30", next: "2025-08-30", status: "due-soon" },
+        { name: "DHPP", date: "2024-08-30", next: "2025-08-30", status: "due-soon" },
+      ],
+      allergies: [],
+      conditions: ["None"],
+      medications: []
+    },
+    food: [
+      { time: "06:30", meal: "Breakfast", item: "Farmina N&D Adult", qty: "300g", notes: "High protein", date: "2025-07-29" },
+      { time: "18:30", meal: "Dinner", item: "Farmina N&D Adult", qty: "300g", notes: "", date: "2025-07-29" },
+    ],
+    water: [
+      { time: "06:40", amount: "600ml", date: "2025-07-29" },
+      { time: "12:00", amount: "550ml", date: "2025-07-29" },
+      { time: "18:40", amount: "600ml", date: "2025-07-29" },
+    ],
+    litter: { status: "N/A", lastCleaned: "N/A", history: [] },
+    vet: {
+      upcoming: [{ date: "2025-08-30", clinic: "Alpha Vet Care", reason: "Annual vaccination", vet: "Dr. Harsh Trivedi" }],
+      past: [{ date: "2024-08-30", clinic: "Alpha Vet Care", reason: "Annual shots + checkup", notes: "Excellent health" }]
+    },
+    reminders: [
+      { id: "r1", type: "vaccination", title: "Annual shots due in 1 month", time: "09:00", active: true },
+      { id: "r2", type: "feeding", title: "Breakfast", time: "06:30", active: true },
+      { id: "r3", type: "grooming", title: "Fortnightly groom", time: "10:00", active: true },
+    ]
+  }
+];
+
+const BLOG_POSTS = [
+  {
+    id: 1, author: "Dr. Meera Joshi", category: "Nutrition", date: "2025-07-25",
+    title: "5 Signs Your Cat Is Not Drinking Enough Water",
+    excerpt: "Dehydration in cats can sneak up quickly. Learn the subtle signs and easy tricks to boost hydration.",
+    readTime: "4 min", likes: 42, comments: 8, icon: "💧"
+  },
+  {
+    id: 2, author: "Dr. Rajesh Kumar", category: "Health", date: "2025-07-22",
+    title: "Hip Dysplasia in Large Dogs: Early Detection Guide",
+    excerpt: "Golden Retrievers and Labradors are prone to hip issues. Here's what every owner should watch for.",
+    readTime: "6 min", likes: 67, comments: 15, icon: "🦴"
+  },
+  {
+    id: 3, author: "Team Collarix", category: "Grooming", date: "2025-07-18",
+    title: "The Ultimate Shih Tzu Grooming Routine",
+    excerpt: "Step-by-step guide to keeping your Shih Tzu's coat mat-free and beautiful between professional visits.",
+    readTime: "5 min", likes: 38, comments: 6, icon: "✂️"
+  },
+  {
+    id: 4, author: "Dr. Anika Mehta", category: "Vaccination", date: "2025-07-10",
+    title: "Why Keeping Up With Cat Vaccinations Matters More Than You Think",
+    excerpt: "Missed a shot? You're not alone. Here's a simple catch-up plan that vets recommend.",
+    readTime: "3 min", likes: 55, comments: 11, icon: "💉"
+  },
+  {
+    id: 5, author: "Team Collarix", category: "Lifestyle", date: "2025-07-05",
+    title: "Creating the Perfect Enrichment Environment for Indoor Cats",
+    excerpt: "Boredom is a silent health risk for indoor cats. Simple, affordable ideas to keep them thriving.",
+    readTime: "7 min", likes: 91, comments: 22, icon: "🌿"
+  },
+];
+
+
+const REMINDER_ICONS = {
+  feeding: Utensils, water: Droplets, litter: Trash2,
+  medication: Pill, vaccination: Syringe, vet: Stethoscope,
+  grooming: Scissors, custom: Bell
+};
+const REMINDER_COLORS = {
+  feeding: "#A8C5A0", water: "#9DB8C8", litter: "#D4C5A9",
+  medication: "#C9A84C", vaccination: "#B8A9C9", vet: "#C4956A",
+  grooming: "#D4B8C0", custom: "#8B9E6B"
+};
+
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const map = {
+    "up-to-date": { label: "Up to date", bg: "#E8F4E8", color: "#3A7A3A" },
+    "due-soon": { label: "Due soon", bg: "#FFF3E0", color: "#E65100" },
+    "overdue": { label: "Overdue", bg: "#FFEBEE", color: "#B71C1C" },
+  };
+  const s = map[status] || { label: status, bg: "#F5F5F5", color: "#555" };
+  return (
+    <span style={{ background: s.bg, color: s.color, padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600 }}>
+      {s.label}
+    </span>
+  );
+}
+
+function Avatar({ pet, size = 52 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: `${pet.color}30`, border: `2px solid ${pet.color}60`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.45, flexShrink: 0
+    }}>
+      {pet.photo}
+    </div>
+  );
+}
+
+// ── SCREENS ───────────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [tab, setTab] = useState("login");
+  const [email, setEmail] = useState("demo@collarix.com");
+  const [pass, setPass] = useState("demo1234");
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #F7F5F0 0%, #EBF0E8 50%, #F0EDE8 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px 20px", position: "relative", overflow: "hidden" }}>
+      {/* NovaTech watermark on login */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        {Array.from({ length: 16 }).map((_, i) => {
+          const row = Math.floor(i / 4); const col = i % 4;
+          return (
+            <div key={i} style={{ position: "absolute", left: `${col * 30 - 5 + (row % 2) * 15}%`, top: `${row * 14 - 3}%`, transform: "rotate(-35deg)", fontFamily: "'Georgia', serif", fontSize: 13, fontWeight: 700, color: "#3A5A30", opacity: 0.07, letterSpacing: "3px", textTransform: "uppercase", whiteSpace: "nowrap", userSelect: "none" }}>
+              NovaTech
+            </div>
+          );
+        })}
+      </div>
+      {/* NovaTech footer on login */}
+      <div style={{ position: "absolute", bottom: 20, display: "flex", alignItems: "center", gap: 6, zIndex: 1 }}>
+        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4A6741", opacity: 0.4 }} />
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "2px", textTransform: "uppercase", color: "#4A6741", opacity: 0.45 }}>Powered by NovaTech</span>
+        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#4A6741", opacity: 0.4 }} />
+      </div>
+      {/* Brand */}
+      <div style={{ textAlign: "center", marginBottom: 32, position: "relative", zIndex: 1 }}>
+        <div style={{ width: 72, height: 72, borderRadius: 20, background: "#4A6741", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", boxShadow: "0 8px 24px #4A674130" }}>
+          <PawPrint size={36} color="white" />
+        </div>
+        <h1 style={{ fontFamily: "'Georgia', serif", fontSize: 28, color: "#2C3520", margin: 0, letterSpacing: "-0.5px" }}>Collarix</h1>
+        <p style={{ color: "#7A8B6A", fontSize: 13, margin: "4px 0 0", letterSpacing: "2px", textTransform: "uppercase" }}>Smart Pet Care</p>
+      </div>
+
+      {/* Card */}
+      <div style={{ background: "white", borderRadius: 20, padding: 28, width: "100%", maxWidth: 380, boxShadow: "0 4px 30px rgba(0,0,0,0.08)", position: "relative", zIndex: 1 }}>
+        {/* Tabs */}
+        <div style={{ display: "flex", background: "#F7F5F0", borderRadius: 12, padding: 4, marginBottom: 24 }}>
+          {["login", "signup"].map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: 9, cursor: "pointer", fontWeight: 600, fontSize: 13, background: tab === t ? "white" : "transparent", color: tab === t ? "#2C3520" : "#9AA88A", boxShadow: tab === t ? "0 2px 8px rgba(0,0,0,0.08)" : "none", transition: "all 0.2s" }}>
+              {t === "login" ? "Sign In" : "Sign Up"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {tab === "signup" && (
+            <input style={inputStyle} placeholder="Full name" />
+          )}
+          <input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email" />
+          <input style={inputStyle} value={pass} onChange={e => setPass(e.target.value)} placeholder="Password" type="password" />
+          {tab === "login" && (
+            <div style={{ textAlign: "right", marginTop: -6 }}>
+              <span style={{ color: "#7A8B6A", fontSize: 12, cursor: "pointer" }}>Forgot password?</span>
+            </div>
+          )}
+          <button onClick={onLogin} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 12, padding: "14px", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 4, boxShadow: "0 4px 14px #4A674140", transition: "transform 0.15s" }}>
+            {tab === "login" ? "Sign In" : "Create Account"}
+          </button>
+        </div>
+
+        <p style={{ textAlign: "center", color: "#B5BFB0", fontSize: 12, marginTop: 16, marginBottom: 0 }}>
+          Demo: demo@collarix.com / demo1234
+        </p>
+      </div>
+    </div>
+  );
+}
+const inputStyle = { border: "1.5px solid #E8EDE4", borderRadius: 11, padding: "12px 14px", fontSize: 14, color: "#2C3520", outline: "none", background: "#FAFAF8", width: "100%", boxSizing: "border-box" };
+
+// ── MY PETS ──────────────────────────────────────────────────────────────────
+function MyPetsScreen({ pets, onSelect }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const filtered = pets.filter(p =>
+    (filter === "all" || p.species === filter) &&
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      {/* Header */}
+      <div style={{ padding: "20px 0 16px" }}>
+        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: "0 0 4px" }}>My Pets</h2>
+        <p style={{ color: "#7A8B6A", fontSize: 13, margin: 0 }}>{pets.length} companions registered</p>
+      </div>
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: 14 }}>
+        <Search size={15} color="#9AA88A" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search pets..." style={{ ...inputStyle, paddingLeft: 36 }} />
+      </div>
+      {/* Filter chips */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+        {[["all", "All"], ["dog", "Dogs 🐕"], ["cat", "Cats 🐱"]].map(([val, label]) => (
+          <button key={val} onClick={() => setFilter(val)} style={{ padding: "6px 16px", borderRadius: 20, border: "1.5px solid", borderColor: filter === val ? "#4A6741" : "#DDE5D8", background: filter === val ? "#4A6741" : "white", color: filter === val ? "white" : "#7A8B6A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* Grid */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {filtered.map(pet => {
+          const overdueVax = pet.health.vaccinations.some(v => v.status === "overdue");
+          const needsLitter = pet.litter.status === "needs-cleaning";
+          const alerts = (overdueVax ? 1 : 0) + (needsLitter ? 1 : 0);
+          return (
+            <button key={pet.id} onClick={() => onSelect(pet)} style={{ background: "white", border: "none", borderRadius: 16, padding: "16px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", textAlign: "left", width: "100%" }}>
+              <Avatar pet={pet} size={56} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 700, color: "#2C3520", fontSize: 16 }}>{pet.name}</span>
+                  {alerts > 0 && <span style={{ background: "#FFEBEE", color: "#C62828", borderRadius: 20, fontSize: 10, fontWeight: 700, padding: "1px 8px" }}>{alerts} alert{alerts > 1 ? "s" : ""}</span>}
+                </div>
+                <p style={{ margin: "2px 0 0", color: "#7A8B6A", fontSize: 13 }}>{pet.breed} • {pet.age}yr • {pet.sex}</p>
+                <p style={{ margin: "4px 0 0", color: "#B5BFB0", fontSize: 11 }}>{pet.species === "cat" ? "🐱 Cat" : "🐕 Dog"}</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#4A6741" }} title="Online" />
+                <ChevronRight size={16} color="#C5D0BE" />
+              </div>
+            </button>
+          );
+        })}
+        {/* Add pet button */}
+        <button onClick={() => alert("In a full deployment, this opens the 'Add New Pet' form and generates a new QR code.")} style={{ background: "#F7F9F6", border: "1.5px dashed #C5D0BE", borderRadius: 16, padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, cursor: "pointer", color: "#7A8B6A", fontWeight: 600 }}>
+          <Plus size={18} /> Add New Pet
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── QR SCANNER ───────────────────────────────────────────────────────────────
+function QRScannerScreen({ pets, onSelect }) {
+  const [scanning, setScanning] = useState(false);
+  const [found, setFound] = useState(null);
+
+  function simulateScan(petId) {
+    setScanning(true);
+    setTimeout(() => {
+      setScanning(false);
+      const pet = pets.find(p => p.id === petId);
+      if (pet) { setFound(pet); }
+    }, 1200);
+  }
+
+  if (found) return (
+    <div style={{ padding: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+      <div style={{ background: "#E8F4E8", borderRadius: 20, padding: 20, textAlign: "center", width: "100%", maxWidth: 340 }}>
+        <CheckCircle size={40} color="#4A6741" style={{ marginBottom: 8 }} />
+        <h3 style={{ color: "#2C3520", margin: "0 0 4px" }}>QR Code Matched!</h3>
+        <p style={{ color: "#7A8B6A", margin: 0, fontSize: 13 }}>Found profile for:</p>
+        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 12, justifyContent: "center" }}>
+          <Avatar pet={found} size={48} />
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontWeight: 700, color: "#2C3520" }}>{found.name}</div>
+            <div style={{ color: "#7A8B6A", fontSize: 12 }}>{found.breed}</div>
+          </div>
+        </div>
+        <button onClick={() => onSelect(found)} style={{ marginTop: 16, background: "#4A6741", color: "white", border: "none", borderRadius: 12, padding: "12px 32px", fontWeight: 700, cursor: "pointer", width: "100%" }}>
+          Open Profile →
+        </button>
+        <button onClick={() => { setFound(null); }} style={{ marginTop: 8, background: "transparent", border: "none", color: "#9AA88A", cursor: "pointer", fontSize: 13 }}>
+          Scan another
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px" }}>
+        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: "0 0 4px" }}>Scan QR Code</h2>
+        <p style={{ color: "#7A8B6A", fontSize: 13, margin: 0 }}>Point camera at a Collarix collar tag</p>
+      </div>
+      {/* Camera preview */}
+      <div style={{ background: "#1A1A1A", borderRadius: 20, height: 280, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", marginBottom: 20 }}>
+        {scanning ? (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ width: 60, height: 60, border: "3px solid #4A6741", borderTop: "3px solid transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+            <p style={{ color: "white", fontSize: 13 }}>Scanning…</p>
+          </div>
+        ) : (
+          <>
+            <div style={{ border: "2px solid #4A6741", width: 180, height: 180, borderRadius: 12, position: "relative" }}>
+              <div style={{ position: "absolute", top: -2, left: -2, width: 24, height: 24, borderTop: "3px solid #A8C5A0", borderLeft: "3px solid #A8C5A0", borderRadius: "3px 0 0 0" }} />
+              <div style={{ position: "absolute", top: -2, right: -2, width: 24, height: 24, borderTop: "3px solid #A8C5A0", borderRight: "3px solid #A8C5A0", borderRadius: "0 3px 0 0" }} />
+              <div style={{ position: "absolute", bottom: -2, left: -2, width: 24, height: 24, borderBottom: "3px solid #A8C5A0", borderLeft: "3px solid #A8C5A0", borderRadius: "0 0 0 3px" }} />
+              <div style={{ position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderBottom: "3px solid #A8C5A0", borderRight: "3px solid #A8C5A0", borderRadius: "0 0 3px 0" }} />
+              <Camera size={32} color="#A8C5A0" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)" }} />
+            </div>
+            <p style={{ position: "absolute", bottom: 16, color: "#888", fontSize: 12 }}>Align QR code inside the frame</p>
+          </>
+        )}
+      </div>
+
+      {/* Simulate scan */}
+      <div style={{ background: "white", borderRadius: 16, padding: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        <p style={{ fontWeight: 600, color: "#2C3520", fontSize: 14, margin: "0 0 12px" }}>🎯 Demo: Simulate QR Scan</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {pets.slice(0, 6).map(pet => (
+            <button key={pet.id} onClick={() => simulateScan(pet.id)} style={{ background: "#F7F9F6", border: "1.5px solid #E8EDE4", borderRadius: 10, padding: "10px 8px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>{pet.photo}</span>
+              <div>
+                <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 12 }}>{pet.name}</div>
+                <div style={{ color: "#9AA88A", fontSize: 10 }}>{pet.id}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+        <button onClick={() => alert("In a real deployment, this opens your phone's native QR camera.")} style={{ marginTop: 12, width: "100%", background: "#4A6741", color: "white", border: "none", borderRadius: 12, padding: "12px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Camera size={16} /> Open Camera
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── PET PROFILE ───────────────────────────────────────────────────────────────
+function PetProfileScreen({ pet, onNavigate, onBack }) {
+  const overdueVax = pet.health.vaccinations.filter(v => v.status === "overdue");
+
+  return (
+    <div style={{ paddingBottom: 20 }}>
+      {/* Hero */}
+      <div style={{ background: `linear-gradient(135deg, ${pet.color}40, ${pet.color}15)`, padding: "24px 20px 20px", position: "relative" }}>
+        <button onClick={onBack} style={{ background: "white", border: "none", borderRadius: 10, padding: "8px", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)", marginBottom: 16 }}>
+          <ChevronLeft size={18} color="#2C3520" />
+        </button>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
+          <Avatar pet={pet} size={80} />
+          <div>
+            <h2 style={{ fontSize: 26, fontFamily: "'Georgia', serif", color: "#2C3520", margin: "0 0 2px" }}>{pet.name}</h2>
+            <p style={{ color: "#5A7050", fontSize: 13, margin: "0 0 8px" }}>{pet.breed} • {pet.age} years</p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span style={{ background: "white", borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 600, color: "#4A6741" }}>{pet.sex}</span>
+              <span style={{ background: "white", borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 600, color: "#4A6741" }}>{pet.species === "cat" ? "🐱 Cat" : "🐕 Dog"}</span>
+            </div>
+          </div>
+        </div>
+        {/* GPS Button */}
+        <a href={/iPhone|iPad|iPod/i.test(navigator.userAgent) ? "https://www.apple.com/icloud/find-my/" : "https://www.google.com/android/find"} target="_blank" rel="noopener noreferrer" style={{ position: "absolute", top: 24, right: 20, background: "#4A6741", color: "white", borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, textDecoration: "none", boxShadow: "0 3px 12px #4A674140" }}>
+          <Navigation size={14} /> Find Pet
+        </a>
+      </div>
+
+      <div style={{ padding: "0 16px" }}>
+        {/* Stats row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, margin: "16px 0" }}>
+          {[["Weight", `${pet.weight}kg`, Weight], ["Height", `${pet.height}cm`, Ruler], ["DOB", pet.dob.slice(5).replace("-", "/"), Calendar]].map(([label, val, Icon]) => (
+            <div key={label} style={{ background: "white", borderRadius: 14, padding: "12px", textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+              <Icon size={16} color="#7A8B6A" style={{ marginBottom: 4 }} />
+              <div style={{ fontWeight: 700, color: "#2C3520", fontSize: 14 }}>{val}</div>
+              <div style={{ color: "#9AA88A", fontSize: 11 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Alerts */}
+        {overdueVax.length > 0 && (
+          <div style={{ background: "#FFEBEE", borderRadius: 12, padding: "12px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+            <AlertCircle size={18} color="#C62828" />
+            <div>
+              <div style={{ fontWeight: 600, color: "#C62828", fontSize: 13 }}>Vaccination overdue</div>
+              <div style={{ color: "#E57373", fontSize: 12 }}>{overdueVax.map(v => v.name).join(", ")}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick actions */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+          {[
+            ["Food", "food", Utensils, "#A8C5A0"],
+            ["Water", "water", Droplets, "#9DB8C8"],
+            ["Litter", "litter", Trash2, "#D4C5A9"],
+            ["Vet", "vet", Stethoscope, "#C4956A"],
+            ["Reminders", "reminders", Bell, "#B8A9C9"],
+            ["Health", "vet", Activity, "#8B9E6B"],
+          ].map(([label, screen, Icon, color]) => (
+            <button key={label} onClick={() => onNavigate(screen, pet)} style={{ background: "white", border: "none", borderRadius: 14, padding: "14px 8px", cursor: "pointer", boxShadow: "0 2px 10px rgba(0,0,0,0.05)", textAlign: "center" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}25`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px" }}>
+                <Icon size={18} color={color} />
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#5A6A50" }}>{label}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Health */}
+        <SectionCard title="Vaccinations">
+          {pet.health.vaccinations.map((v, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < pet.health.vaccinations.length - 1 ? "1px solid #F0F4EC" : "none" }}>
+              <div>
+                <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{v.name}</div>
+                <div style={{ color: "#9AA88A", fontSize: 11 }}>Next: {v.next}</div>
+              </div>
+              <StatusBadge status={v.status} />
+            </div>
+          ))}
+        </SectionCard>
+
+        {pet.health.allergies.length > 0 && (
+          <SectionCard title="Allergies">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {pet.health.allergies.map((a, i) => (
+                <span key={i} style={{ background: "#FFF3E0", color: "#E65100", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600 }}>{a}</span>
+              ))}
+            </div>
+          </SectionCard>
+        )}
+
+        {pet.health.medications.length > 0 && (
+          <SectionCard title="Medications">
+            {pet.health.medications.map((m, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+                <span style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{m.name}</span>
+                <span style={{ color: "#7A8B6A", fontSize: 12 }}>{m.dose} · {m.freq}</span>
+              </div>
+            ))}
+          </SectionCard>
+        )}
+
+        {/* Owner */}
+        <SectionCard title="Owner & Emergency Contact">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[
+              [User, pet.owner.name, "Owner"],
+              [Phone, pet.owner.phone, "Phone"],
+              [Mail, pet.owner.email, "Email"],
+            ].map(([Icon, val, label]) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: "#F0F4EC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon size={14} color="#7A8B6A" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "#9AA88A" }}>{label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#2C3520" }}>{val}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{ marginTop: 4, padding: "10px", background: "#FFF8F0", borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: "#C4956A", fontWeight: 600, marginBottom: 4 }}>EMERGENCY CONTACT</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#2C3520" }}>{pet.emergency.name} · {pet.emergency.relation}</div>
+              <div style={{ fontSize: 12, color: "#7A8B6A" }}>{pet.emergency.phone}</div>
+            </div>
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, children }) {
+  return (
+    <div style={{ background: "white", borderRadius: 16, padding: "14px 16px", marginBottom: 12, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+      <h4 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 700, color: "#9AA88A", textTransform: "uppercase", letterSpacing: "0.5px" }}>{title}</h4>
+      {children}
+    </div>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function DashboardScreen({ pets, user, onSelectPet }) {
+  const allReminders = pets.flatMap(p => p.reminders.filter(r => r.active).map(r => ({ ...r, petName: p.name, petPhoto: p.photo, petId: p.id })));
+  const upcomingVets = pets.flatMap(p => p.vet.upcoming.map(v => ({ ...v, petName: p.name, petPhoto: p.photo, petId: p.id })));
+  const alertPets = pets.filter(p => p.health.vaccinations.some(v => v.status === "overdue") || p.litter.status === "needs-cleaning");
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: "0 0 2px" }}>Good morning! 🌿</h2>
+          <p style={{ color: "#7A8B6A", fontSize: 13, margin: 0 }}>{new Date().toLocaleDateString("en-IN", { weekday: "long", month: "long", day: "numeric" })}</p>
+        </div>
+        <div style={{ background: "#4A6741", borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+          <Wifi size={12} color="white" />
+          <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>{pets.length} Active</span>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {[
+          ["Total Pets", pets.length, PawPrint, "#4A6741"],
+          ["Alerts", alertPets.length, AlertCircle, alertPets.length > 0 ? "#C62828" : "#4A6741"],
+          ["Reminders Today", allReminders.length, Bell, "#7A6A9A"],
+          ["Upcoming Vet", upcomingVets.length, Stethoscope, "#C4956A"],
+        ].map(([label, val, Icon, color]) => (
+          <div key={label} style={{ background: "white", borderRadius: 16, padding: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontWeight: 800, color: "#2C3520", fontSize: 26 }}>{val}</div>
+                <div style={{ color: "#9AA88A", fontSize: 12, marginTop: 2 }}>{label}</div>
+              </div>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon size={18} color={color} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Alerts */}
+      {alertPets.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#2C3520", margin: "0 0 10px" }}>⚠️ Needs Attention</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {alertPets.map(pet => {
+              const issues = [];
+              if (pet.health.vaccinations.some(v => v.status === "overdue")) issues.push("Vaccination overdue");
+              if (pet.litter.status === "needs-cleaning") issues.push("Litter needs cleaning");
+              return (
+                <button key={pet.id} onClick={() => onSelectPet(pet)} style={{ background: "#FFF8F0", border: "1.5px solid #F5D5C0", borderRadius: 14, padding: "12px 14px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 28 }}>{pet.photo}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#2C3520", fontSize: 14 }}>{pet.name}</div>
+                    {issues.map((issue, i) => <div key={i} style={{ color: "#C4956A", fontSize: 12 }}>• {issue}</div>)}
+                  </div>
+                  <ChevronRight size={16} color="#C4956A" style={{ marginLeft: "auto" }} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Today's reminders */}
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#2C3520", margin: "0 0 10px" }}>Today's Reminders</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {allReminders.slice(0, 5).map((r, i) => {
+            const Icon = REMINDER_ICONS[r.type] || Bell;
+            const color = REMINDER_COLORS[r.type] || "#8B9E6B";
+            return (
+              <div key={i} style={{ background: "white", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon size={16} color={color} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{r.title}</div>
+                  <div style={{ color: "#9AA88A", fontSize: 11 }}>{r.petName} · {r.time}</div>
+                </div>
+                <span style={{ fontSize: 18 }}>{r.petPhoto}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Upcoming vet */}
+      {upcomingVets.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#2C3520", margin: "0 0 10px" }}>📅 Upcoming Vet Visits</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {upcomingVets.slice(0, 3).map((v, i) => (
+              <div key={i} style={{ background: "white", borderRadius: 12, padding: "12px 14px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>{v.petPhoto}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{v.petName} — {v.reason}</div>
+                  <div style={{ color: "#9AA88A", fontSize: 11 }}>{v.date} · {v.clinic}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent pets */}
+      <div>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#2C3520", margin: "0 0 10px" }}>All Pets Quick View</h3>
+        <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+          {pets.map(pet => (
+            <button key={pet.id} onClick={() => onSelectPet(pet)} style={{ background: "white", border: "none", borderRadius: 14, padding: "14px 16px", cursor: "pointer", flexShrink: 0, textAlign: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.05)", minWidth: 80 }}>
+              <div style={{ fontSize: 28, marginBottom: 4 }}>{pet.photo}</div>
+              <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 12 }}>{pet.name}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FOOD TRACKER ──────────────────────────────────────────────────────────────
+function FoodScreen({ pet }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [meals, setMeals] = useState(pet.food);
+  const [form, setForm] = useState({ time: "", meal: "Breakfast", item: "", qty: "", notes: "" });
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🍽️ Food Tracker</h2>
+          <p style={{ color: "#7A8B6A", fontSize: 12, margin: "2px 0 0" }}>{pet.name}</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+          <Plus size={14} /> Log Meal
+        </button>
+      </div>
+      {showAdd && (
+        <div style={{ background: "white", borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <h4 style={{ margin: "0 0 12px", color: "#2C3520", fontSize: 14 }}>Log New Meal</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <input style={inputStyle} placeholder="Time (HH:MM)" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
+              <select style={{ ...inputStyle }} value={form.meal} onChange={e => setForm({ ...form, meal: e.target.value })}>
+                {["Breakfast", "Lunch", "Dinner", "Snack"].map(m => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <input style={inputStyle} placeholder="Food item" value={form.item} onChange={e => setForm({ ...form, item: e.target.value })} />
+            <input style={inputStyle} placeholder="Quantity (e.g. 80g)" value={form.qty} onChange={e => setForm({ ...form, qty: e.target.value })} />
+            <input style={inputStyle} placeholder="Notes (optional)" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+            <button onClick={() => { if (form.item) { setMeals([{ ...form, date: new Date().toISOString().slice(0, 10) }, ...meals]); setForm({ time: "", meal: "Breakfast", item: "", qty: "", notes: "" }); setShowAdd(false); } }} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "11px", fontWeight: 700, cursor: "pointer" }}>
+              Save Meal
+            </button>
+          </div>
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {meals.map((f, i) => (
+          <div key={i} style={{ background: "white", borderRadius: 14, padding: "14px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: "#A8C5A025", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Utensils size={18} color="#A8C5A0" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontWeight: 700, color: "#2C3520", fontSize: 14 }}>{f.meal}</span>
+                <span style={{ color: "#9AA88A", fontSize: 12 }}>{f.time}</span>
+              </div>
+              <div style={{ color: "#5A6A50", fontSize: 13, marginTop: 2 }}>{f.item}</div>
+              <div style={{ color: "#9AA88A", fontSize: 11, marginTop: 2 }}>{f.qty}{f.notes ? ` · ${f.notes}` : ""} · {f.date}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── WATER TRACKER ─────────────────────────────────────────────────────────────
+function WaterScreen({ pet }) {
+  const [logs, setLogs] = useState(pet.water);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ time: "", amount: "" });
+  const total = logs.filter(l => l.date === new Date().toISOString().slice(0, 10)).reduce((s, l) => s + parseInt(l.amount), 0);
+  const goal = pet.species === "dog" ? 800 : 250;
+  const pct = Math.min(100, Math.round(total / goal * 100));
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>💧 Water Tracker</h2>
+          <p style={{ color: "#7A8B6A", fontSize: 12, margin: "2px 0 0" }}>{pet.name}</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+          <Plus size={14} /> Log
+        </button>
+      </div>
+      {/* Progress */}
+      <div style={{ background: "white", borderRadius: 16, padding: 20, marginBottom: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.05)", textAlign: "center" }}>
+        <div style={{ fontSize: 40, marginBottom: 4 }}>💧</div>
+        <div style={{ fontWeight: 800, fontSize: 28, color: "#2C3520" }}>{total}ml</div>
+        <div style={{ color: "#9AA88A", fontSize: 13, marginBottom: 12 }}>of {goal}ml daily goal</div>
+        <div style={{ background: "#EEF5FD", borderRadius: 20, height: 10, overflow: "hidden" }}>
+          <div style={{ background: "linear-gradient(90deg, #9DB8C8, #7AA8C0)", height: "100%", width: `${pct}%`, borderRadius: 20, transition: "width 0.5s" }} />
+        </div>
+        <div style={{ color: "#9DB8C8", fontWeight: 700, fontSize: 13, marginTop: 6 }}>{pct}% of goal</div>
+      </div>
+      {showAdd && (
+        <div style={{ background: "white", borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <input style={inputStyle} placeholder="Time (HH:MM)" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
+            <input style={inputStyle} placeholder="Amount (ml)" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+          </div>
+          <button onClick={() => { if (form.amount) { setLogs([{ ...form, date: new Date().toISOString().slice(0, 10) }, ...logs]); setForm({ time: "", amount: "" }); setShowAdd(false); } }} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "11px", fontWeight: 700, cursor: "pointer", width: "100%" }}>
+            Save
+          </button>
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {logs.map((l, i) => (
+          <div key={i} style={{ background: "white", borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "#9DB8C825", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Droplets size={16} color="#9DB8C8" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: 700, color: "#2C3520", fontSize: 14 }}>{l.amount}</span>
+              <span style={{ color: "#9AA88A", fontSize: 12 }}> · {l.time} · {l.date}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── LITTER TRACKER ────────────────────────────────────────────────────────────
+function LitterScreen({ pet }) {
+  const [status, setStatus] = useState(pet.litter.status);
+  const [history, setHistory] = useState(pet.litter.history);
+
+  if (pet.litter.status === "N/A") return (
+    <div style={{ padding: 24, textAlign: "center" }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>🐕</div>
+      <h3 style={{ color: "#2C3520" }}>Not Applicable</h3>
+      <p style={{ color: "#9AA88A" }}>Litter tracking is for cats only.</p>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px" }}>
+        <h2 style={{ fontSize: 20, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🗑️ Litter Tracker</h2>
+        <p style={{ color: "#7A8B6A", fontSize: 12, margin: "2px 0 0" }}>{pet.name}</p>
+      </div>
+      {/* Status card */}
+      <div style={{ background: status === "clean" ? "#E8F4E8" : "#FFEBEE", borderRadius: 16, padding: 20, textAlign: "center", marginBottom: 16 }}>
+        {status === "clean" ? <CheckCircle size={40} color="#4A6741" /> : <XCircle size={40} color="#C62828" />}
+        <div style={{ fontWeight: 800, fontSize: 18, color: "#2C3520", marginTop: 8 }}>
+          {status === "clean" ? "Litter Box is Clean ✓" : "Needs Cleaning!"}
+        </div>
+        <div style={{ color: "#7A8B6A", fontSize: 12, marginTop: 4 }}>Last cleaned: {history[0] || "Unknown"}</div>
+        <button onClick={() => { const now = new Date().toLocaleString(); setStatus("clean"); setHistory([now, ...history]); }} style={{ marginTop: 14, background: "#4A6741", color: "white", border: "none", borderRadius: 12, padding: "12px 28px", fontWeight: 700, cursor: "pointer" }}>
+          Mark as Cleaned
+        </button>
+      </div>
+      {/* History */}
+      <div style={{ background: "white", borderRadius: 16, padding: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+        <h4 style={{ margin: "0 0 12px", fontSize: 13, color: "#9AA88A", textTransform: "uppercase", fontWeight: 700 }}>Cleaning History</h4>
+        {history.length === 0 ? <p style={{ color: "#C5D0BE", fontSize: 13 }}>No history yet</p> : history.map((h, i) => (
+          <div key={i} style={{ padding: "8px 0", borderBottom: i < history.length - 1 ? "1px solid #F0F4EC" : "none", display: "flex", alignItems: "center", gap: 10 }}>
+            <Check size={14} color="#4A6741" />
+            <span style={{ color: "#5A6A50", fontSize: 13 }}>{h}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── VET & HEALTH ──────────────────────────────────────────────────────────────
+function VetScreen({ pet }) {
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px" }}>
+        <h2 style={{ fontSize: 20, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🏥 Vet & Health</h2>
+        <p style={{ color: "#7A8B6A", fontSize: 12, margin: "2px 0 0" }}>{pet.name}</p>
+      </div>
+      {pet.vet.upcoming.length > 0 && (
+        <SectionCard title="Upcoming Appointments">
+          {pet.vet.upcoming.map((v, i) => (
+            <div key={i} style={{ padding: "10px 0", borderBottom: i < pet.vet.upcoming.length - 1 ? "1px solid #F0F4EC" : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontWeight: 700, color: "#2C3520", fontSize: 14 }}>{v.reason}</span>
+                <span style={{ background: "#E8F4E8", color: "#4A6741", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{v.date}</span>
+              </div>
+              <div style={{ color: "#7A8B6A", fontSize: 12 }}>{v.clinic}</div>
+              <div style={{ color: "#9AA88A", fontSize: 11, marginTop: 2 }}>{v.vet}</div>
+            </div>
+          ))}
+        </SectionCard>
+      )}
+      <SectionCard title="Vaccination Records">
+        {pet.health.vaccinations.map((v, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < pet.health.vaccinations.length - 1 ? "1px solid #F0F4EC" : "none" }}>
+            <div>
+              <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{v.name}</div>
+              <div style={{ color: "#9AA88A", fontSize: 11 }}>Given: {v.date} · Next: {v.next}</div>
+            </div>
+            <StatusBadge status={v.status} />
+          </div>
+        ))}
+      </SectionCard>
+      {pet.vet.past.length > 0 && (
+        <SectionCard title="Past Visits">
+          {pet.vet.past.map((v, i) => (
+            <div key={i} style={{ padding: "10px 0", borderBottom: i < pet.vet.past.length - 1 ? "1px solid #F0F4EC" : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{v.reason}</span>
+                <span style={{ color: "#9AA88A", fontSize: 11 }}>{v.date}</span>
+              </div>
+              <div style={{ color: "#7A8B6A", fontSize: 12, marginTop: 2 }}>{v.clinic}</div>
+              {v.notes && <div style={{ color: "#9AA88A", fontSize: 11, marginTop: 4, fontStyle: "italic" }}>{v.notes}</div>}
+            </div>
+          ))}
+        </SectionCard>
+      )}
+      {pet.health.conditions[0] !== "None" && (
+        <SectionCard title="Medical Conditions">
+          {pet.health.conditions.map((c, i) => (
+            <div key={i} style={{ padding: "4px 0", color: "#5A6A50", fontSize: 13 }}>• {c}</div>
+          ))}
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
+// ── REMINDERS ─────────────────────────────────────────────────────────────────
+function RemindersScreen({ pet }) {
+  const [reminders, setReminders] = useState(pet.reminders);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ type: "feeding", title: "", time: "" });
+
+  function toggle(id) {
+    setReminders(reminders.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  }
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🔔 Reminders</h2>
+          <p style={{ color: "#7A8B6A", fontSize: 12, margin: "2px 0 0" }}>{pet.name}</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+          <Plus size={14} /> Add
+        </button>
+      </div>
+      {showAdd && (
+        <div style={{ background: "white", borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <select style={{ ...inputStyle, marginBottom: 10 }} value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+            {Object.keys(REMINDER_ICONS).map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          </select>
+          <input style={{ ...inputStyle, marginBottom: 10 }} placeholder="Reminder title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+          <input style={{ ...inputStyle, marginBottom: 10 }} placeholder="Time (HH:MM)" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
+          <button onClick={() => { if (form.title) { setReminders([...reminders, { ...form, id: `r${Date.now()}`, active: true }]); setForm({ type: "feeding", title: "", time: "" }); setShowAdd(false); } }} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "11px", fontWeight: 700, cursor: "pointer", width: "100%" }}>
+            Save Reminder
+          </button>
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {reminders.map(r => {
+          const Icon = REMINDER_ICONS[r.type] || Bell;
+          const color = REMINDER_COLORS[r.type] || "#8B9E6B";
+          return (
+            <div key={r.id} style={{ background: "white", borderRadius: 14, padding: "14px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 10px rgba(0,0,0,0.05)", opacity: r.active ? 1 : 0.5 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: `${color}25`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon size={18} color={color} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, color: "#2C3520", fontSize: 14 }}>{r.title}</div>
+                <div style={{ color: "#9AA88A", fontSize: 12 }}>{r.type} · {r.time}</div>
+              </div>
+              <button onClick={() => toggle(r.id)} style={{ width: 44, height: 26, borderRadius: 20, border: "none", background: r.active ? "#4A6741" : "#E0E0E0", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+                <div style={{ width: 18, height: 18, borderRadius: "50%", background: "white", position: "absolute", top: 4, left: r.active ? 22 : 4, transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── BLOG ──────────────────────────────────────────────────────────────────────
+function BlogScreen() {
+  const [posts, setPosts] = useState(BLOG_POSTS);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ title: "", excerpt: "", category: "Tips", author: "" });
+  const [liked, setLiked] = useState({});
+
+  const categories = ["All", "Nutrition", "Health", "Grooming", "Vaccination", "Lifestyle", "Tips"];
+  const [filter, setFilter] = useState("All");
+  const filtered = filter === "All" ? posts : posts.filter(p => p.category === filter);
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>📖 Pet Care Blog</h2>
+          <p style={{ color: "#7A8B6A", fontSize: 13, margin: "2px 0 0" }}>Tips from vets & fellow owners</p>
+        </div>
+        <button onClick={() => setShowAdd(!showAdd)} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "8px 14px", fontWeight: 700, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+          <Plus size={14} /> Post
+        </button>
+      </div>
+
+      {/* Filter */}
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 16 }}>
+        {categories.map(c => (
+          <button key={c} onClick={() => setFilter(c)} style={{ padding: "5px 14px", borderRadius: 20, border: "1.5px solid", borderColor: filter === c ? "#4A6741" : "#DDE5D8", background: filter === c ? "#4A6741" : "white", color: filter === c ? "white" : "#7A8B6A", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {showAdd && (
+        <div style={{ background: "white", borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <h4 style={{ margin: "0 0 12px", color: "#2C3520" }}>Write a Post</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input style={inputStyle} placeholder="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
+            <input style={inputStyle} placeholder="Your name" value={form.author} onChange={e => setForm({ ...form, author: e.target.value })} />
+            <select style={inputStyle} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+              {categories.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
+            </select>
+            <textarea style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} placeholder="Share your tip or experience…" value={form.excerpt} onChange={e => setForm({ ...form, excerpt: e.target.value })} />
+            <button onClick={() => {
+              if (form.title && form.excerpt) {
+                setPosts([{
+                  id: Date.now(), author: form.author || "Anonymous", category: form.category,
+                  date: new Date().toISOString().slice(0, 10), title: form.title, excerpt: form.excerpt,
+                  readTime: "1 min", likes: 0, comments: 0, icon: "✍️"
+                }, ...posts]);
+                setForm({ title: "", excerpt: "", category: "Tips", author: "" });
+                setShowAdd(false);
+              }
+            }} style={{ background: "#4A6741", color: "white", border: "none", borderRadius: 10, padding: "11px", fontWeight: 700, cursor: "pointer" }}>
+              Publish Post
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {filtered.map(post => (
+          <div key={post.id} style={{ background: "white", borderRadius: 16, padding: "16px", boxShadow: "0 2px 12px rgba(0,0,0,0.05)", cursor: "pointer" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+              <span style={{ background: "#F0F4EC", color: "#4A6741", borderRadius: 20, padding: "3px 12px", fontSize: 11, fontWeight: 600 }}>{post.category}</span>
+              <span style={{ fontSize: 22 }}>{post.icon}</span>
+            </div>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#2C3520", margin: "0 0 6px", lineHeight: 1.4 }}>{post.title}</h3>
+            <p style={{ color: "#7A8B6A", fontSize: 13, margin: "0 0 12px", lineHeight: 1.5 }}>{post.excerpt}</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                <button onClick={() => setLiked(l => ({ ...l, [post.id]: !l[post.id] }))} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: liked[post.id] ? "#C62828" : "#9AA88A", fontSize: 12 }}>
+                  <Heart size={14} fill={liked[post.id] ? "#C62828" : "none"} /> {post.likes + (liked[post.id] ? 1 : 0)}
+                </button>
+                <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#9AA88A", fontSize: 12 }}>
+                  <MessageCircle size={14} /> {post.comments}
+                </span>
+              </div>
+              <div style={{ color: "#B5BFB0", fontSize: 11 }}>By {post.author} · {post.readTime}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── QR GENERATOR ──────────────────────────────────────────────────────────────
+function QRGeneratorScreen({ pets }) {
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px" }}>
+        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>🔲 QR Code Generator</h2>
+        <p style={{ color: "#7A8B6A", fontSize: 13, margin: "2px 0 0" }}>10 unique collar QR codes</p>
+      </div>
+      <div style={{ background: "#FFF8F0", borderRadius: 14, padding: 14, marginBottom: 16, display: "flex", gap: 10 }}>
+        <Info size={16} color="#C4956A" style={{ flexShrink: 0, marginTop: 2 }} />
+        <p style={{ color: "#7A6A5A", fontSize: 13, margin: 0 }}>Each QR encodes a unique deep link (e.g. <code style={{ background: "#F0EDE8", padding: "1px 5px", borderRadius: 4 }}>collarix://pet/pet-001</code>). Print and attach to collar tags. Scan with any QR reader or the in-app scanner.</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {pets.map((pet, i) => (
+          <div key={pet.id} style={{ background: "white", borderRadius: 16, padding: 14, boxShadow: "0 2px 10px rgba(0,0,0,0.06)", textAlign: "center" }}>
+            {/* QR visual representation */}
+            <div style={{ width: "100%", aspectRatio: "1", background: "#F7F9F6", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10, position: "relative", overflow: "hidden", border: "1.5px solid #E8EDE4" }}>
+              <QRSVGIcon petId={pet.id} color={pet.color} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
+              <span style={{ fontSize: 18 }}>{pet.photo}</span>
+              <span style={{ fontWeight: 700, color: "#2C3520", fontSize: 13 }}>{pet.name}</span>
+            </div>
+            <div style={{ color: "#9AA88A", fontSize: 10, marginBottom: 8 }}>{pet.id}</div>
+            <button onClick={() => alert(`In production, this downloads QR code for ${pet.name} (${pet.id}) as a high-res PNG ready for printing.`)} style={{ background: "#4A674115", border: "1.5px solid #4A674130", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "#4A6741", cursor: "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+              <Download size={12} /> Download
+            </button>
+          </div>
+        ))}
+      </div>
+      {/* Mapping table */}
+      <div style={{ background: "white", borderRadius: 16, padding: 16, marginTop: 16, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+        <h4 style={{ margin: "0 0 12px", fontSize: 13, color: "#9AA88A", textTransform: "uppercase", fontWeight: 700 }}>QR → Profile Mapping</h4>
+        {pets.map((pet, i) => (
+          <div key={pet.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: i < pets.length - 1 ? "1px solid #F0F4EC" : "none", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>{pet.photo}</span>
+              <span style={{ fontWeight: 600, color: "#2C3520", fontSize: 13 }}>{pet.name}</span>
+            </div>
+            <span style={{ color: "#9AA88A", fontSize: 11, fontFamily: "monospace" }}>{pet.id}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QRSVGIcon({ petId, color }) {
+  // Generates a visual QR-like pattern using the pet ID as a seed
+  const seed = petId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const size = 7;
+  const cells = [];
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const isCorner = (r < 2 && c < 2) || (r < 2 && c >= size - 2) || (r >= size - 2 && c < 2);
+      const hash = (seed * (r * size + c + 1) * 2654435761) & 0xFFFFFFFF;
+      const filled = isCorner || (hash % 3 !== 0);
+      if (filled) cells.push({ r, c, corner: isCorner });
+    }
+  }
+  const cs = 100 / size;
+  return (
+    <svg viewBox="0 0 100 100" width="80%" height="80%">
+      {cells.map(({ r, c, corner }, i) => (
+        <rect key={i} x={c * cs + 1} y={r * cs + 1} width={cs - 2} height={cs - 2} rx={corner ? 3 : 1} fill={corner ? "#2C3520" : color || "#4A6741"} opacity={corner ? 1 : 0.7} />
+      ))}
+    </svg>
+  );
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function SettingsScreen({ onLogout }) {
+  const [notifs, setNotifs] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ padding: "20px 0 16px" }}>
+        <h2 style={{ fontSize: 22, fontFamily: "'Georgia', serif", color: "#2C3520", margin: 0 }}>Settings</h2>
+      </div>
+      {/* Profile */}
+      <div style={{ background: "white", borderRadius: 16, padding: "16px", marginBottom: 12, boxShadow: "0 2px 10px rgba(0,0,0,0.05)", display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#4A674120", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>👤</div>
+        <div>
+          <div style={{ fontWeight: 700, color: "#2C3520" }}>Demo User</div>
+          <div style={{ color: "#9AA88A", fontSize: 12 }}>demo@collarix.com</div>
+        </div>
+        <button style={{ marginLeft: "auto", background: "#F7F9F6", border: "1.5px solid #E8EDE4", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#4A6741", cursor: "pointer", fontWeight: 600 }}>Edit</button>
+      </div>
+
+      {[
+        { label: "Push Notifications", sub: "Reminders & alerts", val: notifs, set: setNotifs },
+        { label: "Dark Mode", sub: "Easier on the eyes at night", val: darkMode, set: setDarkMode },
+      ].map(({ label, sub, val, set }) => (
+        <div key={label} style={{ background: "white", borderRadius: 14, padding: "14px 16px", marginBottom: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 600, color: "#2C3520", fontSize: 14 }}>{label}</div>
+            <div style={{ color: "#9AA88A", fontSize: 12 }}>{sub}</div>
+          </div>
+          <button onClick={() => set(!val)} style={{ width: 44, height: 26, borderRadius: 20, border: "none", background: val ? "#4A6741" : "#E0E0E0", cursor: "pointer", position: "relative" }}>
+            <div style={{ width: 18, height: 18, borderRadius: "50%", background: "white", position: "absolute", top: 4, left: val ? 22 : 4, transition: "left 0.2s" }} />
+          </button>
+        </div>
+      ))}
+
+      {[
+        ["Privacy Policy", "🔒"],
+        ["Terms of Service", "📋"],
+        ["Help & Support", "💬"],
+        ["About Collarix", "🐾"],
+      ].map(([label, icon]) => (
+        <button key={label} onClick={() => alert(`${label} would open in a real app.`)} style={{ background: "white", border: "none", borderRadius: 14, padding: "14px 16px", marginBottom: 8, display: "flex", alignItems: "center", gap: 12, cursor: "pointer", width: "100%", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <span style={{ fontSize: 18 }}>{icon}</span>
+          <span style={{ flex: 1, fontWeight: 600, color: "#2C3520", fontSize: 14, textAlign: "left" }}>{label}</span>
+          <ChevronRight size={16} color="#C5D0BE" />
+        </button>
+      ))}
+
+      <button onClick={onLogout} style={{ width: "100%", marginTop: 8, background: "#FFEBEE", color: "#C62828", border: "none", borderRadius: 14, padding: "14px", fontWeight: 700, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <LogOut size={16} /> Sign Out
+      </button>
+      <p style={{ textAlign: "center", color: "#C5D0BE", fontSize: 11, marginTop: 16 }}>Collarix v1.0.0 · © 2025 Collarix Technologies</p>
+    </div>
+  );
+}
+
+// ── BOTTOM NAV ────────────────────────────────────────────────────────────────
+function BottomNav({ active, onChange }) {
+  const tabs = [
+    { id: "dashboard", Icon: Home, label: "Home" },
+    { id: "pets", Icon: PawPrint, label: "Pets" },
+    { id: "scan", Icon: QrCode, label: "Scan" },
+    { id: "blog", Icon: BookOpen, label: "Blog" },
+    { id: "settings", Icon: Settings, label: "Settings" },
+  ];
+  return (
+    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "white", borderTop: "1px solid #EEF2EC", display: "flex", zIndex: 100, paddingBottom: "env(safe-area-inset-bottom, 8px)" }}>
+      {tabs.map(({ id, Icon, label }) => (
+        <button key={id} onClick={() => onChange(id)} style={{ flex: 1, border: "none", background: "none", cursor: "pointer", padding: "10px 0 8px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+          {id === "scan" ? (
+            <div style={{ width: 46, height: 46, borderRadius: 14, background: active === id ? "#2C3520" : "#4A6741", display: "flex", alignItems: "center", justifyContent: "center", marginTop: -18, boxShadow: "0 4px 16px #4A674140" }}>
+              <Icon size={22} color="white" />
+            </div>
+          ) : (
+            <>
+              <Icon size={20} color={active === id ? "#4A6741" : "#B5BFB0"} />
+              <span style={{ fontSize: 10, fontWeight: active === id ? 700 : 500, color: active === id ? "#4A6741" : "#B5BFB0" }}>{label}</span>
+            </>
+          )}
+          {id === "scan" && <span style={{ fontSize: 10, fontWeight: 700, color: active === id ? "#2C3520" : "#4A6741", marginTop: 2 }}>Scan</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── HEADER ────────────────────────────────────────────────────────────────────
+function AppHeader({ screen, pet, onBack, onQR }) {
+  const titles = { dashboard: null, pets: null, scan: null, blog: null, settings: null, food: "Food Tracker", water: "Hydration", litter: "Litter", vet: "Vet & Health", reminders: "Reminders", profile: null };
+  const showBack = ["food", "water", "litter", "vet", "reminders", "profile"].includes(screen);
+  const title = titles[screen];
+
+  if (screen === "dashboard") return (
+    <div style={{ background: "white", padding: "14px 20px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #F0F4EC" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <PawPrint size={20} color="#4A6741" />
+        <span style={{ fontFamily: "'Georgia', serif", fontWeight: 700, color: "#2C3520", fontSize: 18 }}>Collarix</span>
+      </div>
+      <button onClick={onQR} style={{ background: "#F0F4EC", border: "none", borderRadius: 10, padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4A6741", fontWeight: 600 }}>
+        <QrCode size={14} /> QR Codes
+      </button>
+    </div>
+  );
+
+  if (!showBack) return (
+    <div style={{ background: "white", padding: "14px 20px 10px", borderBottom: "1px solid #F0F4EC", display: "flex", alignItems: "center", gap: 8 }}>
+      <PawPrint size={18} color="#4A6741" />
+      <span style={{ fontFamily: "'Georgia', serif", fontWeight: 700, color: "#2C3520", fontSize: 18 }}>Collarix</span>
+    </div>
+  );
+
+  return (
+    <div style={{ background: "white", padding: "14px 20px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid #F0F4EC" }}>
+      <button onClick={onBack} style={{ background: "#F0F4EC", border: "none", borderRadius: 10, padding: "8px", cursor: "pointer" }}>
+        <ChevronLeft size={18} color="#2C3520" />
+      </button>
+      {pet && <span style={{ fontSize: 20 }}>{pet.photo}</span>}
+      <div>
+        <div style={{ fontWeight: 700, color: "#2C3520", fontSize: 15 }}>{title}</div>
+        {pet && <div style={{ color: "#9AA88A", fontSize: 11 }}>{pet.name}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── ROOT APP ──────────────────────────────────────────────────────────────────
+export default function CollarixApp() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [screen, setScreen] = useState("dashboard");
+  const [activePet, setActivePet] = useState(null);
+  const [navTab, setNavTab] = useState("dashboard");
+  const pets = DEMO_PETS;
+
+  function handleNavChange(tab) {
+    setNavTab(tab);
+    setScreen(tab);
+    if (tab !== "scan") setActivePet(null);
+  }
+
+  function handleSelectPet(pet) {
+    setActivePet(pet);
+    setScreen("profile");
+  }
+
+  function handleNavigate(targetScreen, pet) {
+    setActivePet(pet);
+    setScreen(targetScreen);
+  }
+
+  function handleBack() {
+    if (screen === "profile") { setScreen("pets"); setNavTab("pets"); }
+    else if (["food", "water", "litter", "vet", "reminders"].includes(screen)) setScreen("profile");
+    else { setScreen("dashboard"); setNavTab("dashboard"); }
+  }
+
+  if (!loggedIn) return <LoginScreen onLogin={() => setLoggedIn(true)} />;
+
+  const renderScreen = () => {
+    switch (screen) {
+      case "dashboard": return <DashboardScreen pets={pets} user={{}} onSelectPet={handleSelectPet} />;
+      case "pets": return <MyPetsScreen pets={pets} onSelect={handleSelectPet} />;
+      case "scan": return <QRScannerScreen pets={pets} onSelect={handleSelectPet} />;
+      case "profile": return activePet ? <PetProfileScreen pet={activePet} onNavigate={handleNavigate} onBack={handleBack} /> : null;
+      case "food": return activePet ? <FoodScreen pet={activePet} /> : null;
+      case "water": return activePet ? <WaterScreen pet={activePet} /> : null;
+      case "litter": return activePet ? <LitterScreen pet={activePet} /> : null;
+      case "vet": return activePet ? <VetScreen pet={activePet} /> : null;
+      case "reminders": return activePet ? <RemindersScreen pet={activePet} /> : null;
+      case "blog": return <BlogScreen />;
+      case "qrgenerator": return <QRGeneratorScreen pets={pets} />;
+      case "settings": return <SettingsScreen onLogout={() => setLoggedIn(false)} />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 430, margin: "0 auto", background: "#F7F5F0", minHeight: "100vh", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 0; }
+        input, select, textarea { -webkit-appearance: none; }
+        @keyframes novatech-pulse { 0%,100%{opacity:0.055} 50%{opacity:0.09} }
+      `}</style>
+
+      {/* ── NOVATECH DIAGONAL WATERMARK OVERLAY ── */}
+      <div style={{
+        position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: 430, height: "100vh",
+        pointerEvents: "none", zIndex: 9999, overflow: "hidden"
+      }}>
+        {/* Repeating diagonal watermark tiles */}
+        {Array.from({ length: 20 }).map((_, i) => {
+          const row = Math.floor(i / 4);
+          const col = i % 4;
+          return (
+            <div key={i} style={{
+              position: "absolute",
+              left: `${col * 28 - 10 + (row % 2) * 14}%`,
+              top: `${row * 12 - 2}%`,
+              transform: "rotate(-35deg)",
+              fontFamily: "'Georgia', serif",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#3A5A30",
+              opacity: 0.065,
+              letterSpacing: "3px",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              animation: "novatech-pulse 4s ease-in-out infinite",
+              animationDelay: `${(i * 0.3) % 4}s`
+            }}>
+              NovaTech
+            </div>
+          );
+        })}
+
+        {/* Corner badge — bottom right */}
+        <div style={{
+          position: "absolute", bottom: 88, right: 12,
+          background: "rgba(74,103,65,0.08)",
+          border: "1px solid rgba(74,103,65,0.15)",
+          borderRadius: 8, padding: "4px 10px",
+          display: "flex", alignItems: "center", gap: 5
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#4A6741", opacity: 0.5 }} />
+          <span style={{
+            fontSize: 9, fontWeight: 800, letterSpacing: "1.5px",
+            textTransform: "uppercase", color: "#4A6741", opacity: 0.55,
+            fontFamily: "-apple-system, sans-serif"
+          }}>NovaTech</span>
+        </div>
+      </div>
+
+      <AppHeader screen={screen} pet={activePet} onBack={handleBack} onQR={() => setScreen("qrgenerator")} />
+      <div style={{ paddingBottom: 80, overflowY: "auto", maxHeight: "calc(100vh - 50px)" }}>
+        {renderScreen()}
+      </div>
+      <BottomNav active={navTab} onChange={handleNavChange} />
+    </div>
+  );
+}
