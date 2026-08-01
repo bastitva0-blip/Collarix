@@ -530,7 +530,7 @@ function PetProfileScreen({ pet, user, onNavigate, onBack }) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function DashboardScreen({ pets, user, onSelectPet }) {
+function DashboardScreen({ pets, user, onSelectPet, onOpenQR }) {
   const { t } = useTheme();
   const [dashReminders, setDashReminders] = useState([]);
   const [dashVets, setDashVets] = useState([]);
@@ -640,6 +640,8 @@ function DashboardScreen({ pets, user, onSelectPet }) {
           )}
         </>
       )}
+
+      {pets.length > 0 && <AllPetsQRBox pets={pets} onOpenQR={onOpenQR} />}
 
       {pets.length > 0 && (
         <div>
@@ -1214,6 +1216,61 @@ function BlogScreen() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── ALL PETS QR BOX ───────────────────────────────────────────────────────────
+function PetQRMini({ pet, onOpen }) {
+  const { t } = useTheme();
+  const ref = useRef(null);
+  const qrInst = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.innerHTML = "";
+    qrInst.current = new QRCodeStyling({
+      width: 90, height: 90, type: "svg",
+      data: `https://collarix.vercel.app/pet/${pet.id}`,
+      dotsOptions: { color: "#2C3520", type: "rounded" },
+      cornersSquareOptions: { type: "extra-rounded", color: "#4A6741" },
+      cornersDotOptions: { type: "dot", color: "#4A6741" },
+      backgroundOptions: { color: "transparent" },
+    });
+    qrInst.current.append(ref.current);
+  }, [pet.id]);
+
+  return (
+    <button onClick={onOpen} style={{ background: t.card, border: `1.5px solid ${t.border}`, borderRadius: 16, padding: "14px 12px", cursor: "pointer", textAlign: "center", flexShrink: 0, width: 126, boxShadow: t.shadow }}>
+      <div style={{ background: "white", borderRadius: 10, padding: 6, display: "inline-block", marginBottom: 8 }}>
+        <div ref={ref} />
+      </div>
+      <div style={{ fontSize: 16, marginBottom: 2 }}>{pet.photo}</div>
+      <div style={{ fontWeight: 700, color: t.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pet.name}</div>
+      <div style={{ color: "#4A6741", fontSize: 10, fontWeight: 600, marginTop: 3 }}>Tap to open →</div>
+    </button>
+  );
+}
+
+function AllPetsQRBox({ pets, onOpenQR }) {
+  const { t } = useTheme();
+  if (!pets.length) return null;
+  return (
+    <div style={{ background: t.card, borderRadius: 20, padding: "16px 16px 20px", marginBottom: 20, boxShadow: t.shadow }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: t.text }}>🐾 Pet QR Tags</h3>
+          <p style={{ margin: "2px 0 0", fontSize: 12, color: t.textMuted }}>Tap to view or download each tag</p>
+        </div>
+        <div style={{ background: t.accentBg, borderRadius: 10, padding: "4px 10px" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#4A6741" }}>{pets.length} tag{pets.length !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4 }}>
+        {pets.map(pet => (
+          <PetQRMini key={pet.id} pet={pet} onOpen={() => onOpenQR(pet)} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -1983,7 +2040,7 @@ export default function App() {
   function renderScreen() {
     if (!session) return <LoginScreen />;
     switch (currentScreen) {
-      case "home": return <DashboardScreen pets={pets} user={session.user} onSelectPet={handleSelectPet} />;
+      case "home": return <DashboardScreen pets={pets} user={session.user} onSelectPet={handleSelectPet} onOpenQR={pet => { setCurrentPet(pet); setCurrentScreen("qr"); }} />;
       case "pets": return <MyPetsScreen pets={pets} user={session.user} onSelect={handleSelectPet} onPetAdded={handlePetAdded} />;
       case "pet-profile": return currentPet ? <PetProfileScreen pet={currentPet} user={session.user} onNavigate={handlePetNavigation} onBack={goBack} /> : <MyPetsScreen pets={pets} user={session.user} onSelect={handleSelectPet} onPetAdded={handlePetAdded} />;
       case "food": return currentPet ? <FoodScreen pet={currentPet} user={session.user} /> : null;
