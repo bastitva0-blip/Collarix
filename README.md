@@ -3,7 +3,7 @@
 <br />
 
 <!-- LOGO / BANNER -->
-<img src="https://collarix.vercel.app/collarix-logo.svg" alt="Collarix Logo" width="140" />
+<img src="./src/collarix-logo.svg" alt="Collarix Logo" width="140" />
 
 <br /><br />
 
