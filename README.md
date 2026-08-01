@@ -376,9 +376,9 @@ Things that would take Collarix to the next level:
 
 <br />
 
-**Collarix** was designed and built by **Saloni Agarwal**
+**Collarix** was designed and developed by **Astitva Bhardwaj**
 
-*Smart pet care for modern pet parents.*
+*Built for client **Saloni Agarwal** — smart pet care for modern pet parents.*
 
 <br />
 
